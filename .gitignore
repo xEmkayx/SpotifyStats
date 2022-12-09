@@ -24,7 +24,6 @@ spotify_scripts/skipper.py
 analysis/graphics/webapp/helpers/df_temp_write_files_alt.py
 analysis/graphics/webapp/select_statements_old.py
 analysis/graphics/webapp/test
-/analysis/
 ./README_old.md
 
 # random scripts

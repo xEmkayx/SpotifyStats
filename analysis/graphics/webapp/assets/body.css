@@ -1,0 +1,128 @@
+*,
+*:after,
+*:before {
+	box-sizing: border-box;
+}
+
+$primary-color: #00005c; 
+$text-color: mix(#000, $primary-color, 64%);
+
+/*
+body {
+	font-family: "Inter", sans-serif;
+	color: $text-color;
+	font-size: calc(1em + 1.25vw);
+	background-color: mix(#fff, $primary-color, 90%);
+}
+*/
+
+form {
+	display: flex;
+	flex-wrap: wrap;
+	flex-direction: column;
+}
+
+label {
+	display: flex;
+	cursor: pointer;
+	font-weight: 500;
+	position: relative;
+	overflow: hidden;
+	margin-bottom: 0.375em;
+	/* Accessible outline */
+	/* Remove comment to use */ 
+	/*
+		&:focus-within {
+				outline: .125em solid $primary-color;
+		}
+	*/
+	input {
+		position: absolute;
+		left: -9999px;
+		&:checked + span {
+			background-color: mix(#fff, $primary-color, 84%);
+			&:before {
+				box-shadow: inset 0 0 0 0.4375em $primary-color;
+			}
+		}
+	}
+	span {
+		display: flex;
+		align-items: center;
+		padding: 0.375em 0.75em 0.375em 0.375em;
+		border-radius: 99em; // or something higher...
+		transition: 0.25s ease;
+		&:hover {
+			background-color: mix(#fff, $primary-color, 84%);
+		}
+		&:before {
+			display: flex;
+			flex-shrink: 0;
+			content: "";
+			background-color: #fff;
+			width: 1.5em;
+			height: 1.5em;
+			border-radius: 50%;
+			margin-right: 0.375em;
+			transition: 0.25s ease;
+			box-shadow: inset 0 0 0 0.125em $primary-color;
+		}
+	}
+}
+
+body {
+    /*
+    color: #FAEEEB;
+    background-color: #111111;
+    */
+    }
+
+.hz-container{
+    display: flex;
+    justify-content: flex-end;
+    align-content: center;
+    background-color: transparent;
+    height: 40px;
+    padding-right: 30px;
+    filter: invert(1);
+    mix-blend-mode: difference;
+}
+
+.date{
+    color: black;
+    text-align: center;
+    width: 20px;
+    /*
+    border: black;
+    border-style: double;
+    */
+    font-style: italic;
+    margin-left: 10px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+
+.date-text{
+    color: black;
+    text-align: center;
+    margin-right: 10px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.container-single{
+    display: flex;
+    position: relative;
+
+}
+
+.container-radiobuttons{
+    display: block;
+    position: relative;
+    padding-left: 30px;
+    margin-bottom: 10px;
+    /* cursor: pointer; */
+    font-size: 20px;
+}
+
