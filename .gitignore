@@ -24,7 +24,10 @@ spotify_scripts/skipper.py
 analysis/graphics/webapp/helpers/df_temp_write_files_alt.py
 analysis/graphics/webapp/select_statements_old.py
 analysis/graphics/webapp/test
-./README_old.md
+deploy.bat
+README_old.md
+spotify_scripts/BigOperations/unliked_songs.json
+spotify_scripts/BigOperations/unliked_songs.txt
 
 # random scripts
 spotify_scripts/BigOperations/add_one_h_to_last_streams.py
@@ -215,4 +218,3 @@ fabric.properties
 
 # idea folder, uncomment if you don't need it
 .idea!/private/connector_values.py
-!/README_old.md
