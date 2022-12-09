@@ -1,0 +1,4 @@
+- [ ] Docker container
+- [ ] Cleaning up
+- [ ] Add settings menu
+- [ ] better visualisation
