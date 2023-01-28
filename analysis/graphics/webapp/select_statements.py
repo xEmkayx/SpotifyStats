@@ -1,8 +1,7 @@
-import sys
 # sys.path.append(r'C:\Users\Markus\PycharmProjects\Spotify_Stats')
 import pandas as pd
-from tools.DBOperations import dboperations
 
+from tools.DBOperations import dboperations
 
 dbops = dboperations.DBOperations()
 

@@ -1,10 +1,6 @@
 import dash
-from dash import html, dcc, callback, Input, Output
-from analysis.graphics.webapp.select_statements import *
-from analysis.graphics.webapp.helpers.colors import colors
-from analysis.graphics.webapp.helpers.df_filenames import *
 import dash_bootstrap_components as dbc
-
+from dash import html
 
 dash.register_page(__name__)
 

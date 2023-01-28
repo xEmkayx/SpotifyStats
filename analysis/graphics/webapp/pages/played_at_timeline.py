@@ -5,9 +5,11 @@ from dash import html, dcc, callback, Input, Output
 from dash_bootstrap_templates import ThemeChangerAIO, template_from_url
 
 from analysis.graphics.webapp.helpers.df_filenames import *
-# import datetime as dt
+# import datetime
 from analysis.graphics.webapp.helpers.time_functions import *
 from analysis.graphics.webapp.select_statements import *
+
+"""
 
 dash.register_page(__name__)
 
@@ -16,16 +18,20 @@ df = pd.read_csv(fr'{df_common_path}\{fn_df_allrounder}.csv')
 graph = dcc.Graph(
     id='played-at-plot',
 )
+"" "
+    TODO: TIMELINE:
+    graphen für jeden monat berechnen und als animation ausgeben
+    
+    rest hier anpassen; ist bisher 1:1 kopiert
+"""
 
-# TODO: MORGENS/ABENDS
-tommorow = date(datetime.now().year, datetime.now().month, datetime.now().day + 1)
-
+"""
 datepicker = dcc.DatePickerRange(
     id='date-picker-range',
-    min_date_allowed=date(2010, 1, 1),
-    max_date_allowed=tommorow,  # date(2022, 12, 12),  #
-    initial_visible_month=date.today(),  # date(2022, 11, 1),  #
-    end_date=tommorow,
+    min_date_allowed=date(2021, 1, 1),
+    max_date_allowed=date(2022, 12, 12),  # date.today(),
+    initial_visible_month=date(2022, 11, 1),  # date.today(),
+    end_date=date(datetime.now().year, datetime.now().month, datetime.now().day + 1),
     start_date=date(datetime.now().year, 1, 1)
 )
 
@@ -262,3 +268,4 @@ def update_table(start_date, end_date):
 
     tab = dbc.Table.from_dataframe(df_combined.head(n=1000), striped=True, bordered=True, hover=True)
     return tab
+"""

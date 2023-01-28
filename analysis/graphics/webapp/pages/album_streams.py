@@ -1,11 +1,11 @@
 import dash
+import plotly.express as px
 from dash import html, dcc, callback, Input, Output
-from analysis.graphics.webapp.select_statements import *
-from analysis.graphics.webapp.helpers.colors import colors
+from dash_bootstrap_templates import ThemeChangerAIO, template_from_url
+
 from analysis.graphics.webapp.helpers.consts import *
 from analysis.graphics.webapp.helpers.df_filenames import *
-from dash_bootstrap_templates import ThemeChangerAIO, template_from_url
-import plotly.express as px
+from analysis.graphics.webapp.select_statements import *
 
 dash.register_page(__name__)
 

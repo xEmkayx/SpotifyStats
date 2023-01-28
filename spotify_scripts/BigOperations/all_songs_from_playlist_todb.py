@@ -2,12 +2,12 @@
     Add all songs from a playlist to the database
     (this is not an automated script. It's intended to be run manually.)
 """
-import traceback
-from traceback import format_exc
 import json
 import os.path
 import time
-import logging
+import traceback
+from traceback import format_exc
+
 import mysql.connector
 import spotipy
 from spotipy import SpotifyOAuth

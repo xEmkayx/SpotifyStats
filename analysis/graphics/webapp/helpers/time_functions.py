@@ -1,4 +1,6 @@
+import time
 from datetime import date, datetime, timedelta
+# import datetime
 
 
 def strfdelta(tdelta, fmt):
@@ -42,3 +44,9 @@ def get_standard_time():
     end_date = str(date(datetime.now().year, datetime.now().month, datetime.now().day + 1))
 
     return start_date, end_date
+
+
+def timestring_to_seconds(t: str):
+    x = time.strptime(t.split(',')[0], '%H:%M:%S')
+    sec = timedelta(hours=x.tm_hour, minutes=x.tm_min, seconds=x.tm_sec).total_seconds()
+    return sec

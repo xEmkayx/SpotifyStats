@@ -1,14 +1,13 @@
 # Run this app with `python app.py` and
 # visit http://127.0.0.1:8050/ in your web browser.
-from dash import Dash, dcc, html
-from dash import Input, Output, html
 import dash
+import dash_bootstrap_components as dbc
+import plotly.io as pio
+from dash import Dash
+from dash import html
+from dash_bootstrap_templates import ThemeChangerAIO
 
 import analysis.graphics.webapp.helpers.setting_functions
-from helpers.colors import colors
-import dash_bootstrap_components as dbc
-from dash_bootstrap_templates import ThemeChangerAIO, template_from_url
-import plotly.io as pio
 
 default_theme = dbc.themes.VAPOR
 pio.templates.default = "plotly_dark"

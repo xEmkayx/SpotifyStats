@@ -1,0 +1,14 @@
+version: '3'
+services:
+  mysql:
+    build:
+      context: ../Spotify_Stats
+      dockerfile: /ai_docker/mysql/Dockerfile
+    ports:
+      - "3306:3306"
+  python:
+    build:
+      context: ../Spotify_Stats
+      dockerfile: /ai_docker/python/Dockerfile
+    depends_on:
+      - mysql

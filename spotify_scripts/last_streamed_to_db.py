@@ -1,8 +1,8 @@
-from traceback import format_exc
 import json
 import os.path
 import time
-import logging
+from traceback import format_exc
+
 import mysql.connector
 import spotipy
 from spotipy import SpotifyOAuth
