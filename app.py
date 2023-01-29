@@ -8,6 +8,8 @@ from dash import html
 from dash_bootstrap_templates import ThemeChangerAIO
 
 import analysis.graphics.webapp.helpers.setting_functions
+from pathlib import Path
+import os
 
 default_theme = dbc.themes.VAPOR
 pio.templates.default = "plotly_dark"
@@ -28,6 +30,9 @@ available_themes = [
     dbc.themes.ZEPHYR
 ]
 
+pages_folder = os.path.join(Path(__file__).parent, 'analysis/graphics/webapp/pages')
+assets_folder = os.path.join(Path(__file__).parent, 'analysis/graphics/webapp/assets')
+
 theme_change = ThemeChangerAIO(aio_id="all-themes")
 
 dbc_css = "https://cdn.jsdelivr.net/gh/AnnMarieW/dash-bootstrap-templates/dbc.min.css"
@@ -35,7 +40,9 @@ dbc_css = "https://cdn.jsdelivr.net/gh/AnnMarieW/dash-bootstrap-templates/dbc.mi
 app = dash.Dash(__name__, use_pages=True, assets_ignore='./assets/*.css',
                 external_stylesheets=[default_theme,
                                       dbc_css
-                                      ]
+                                      ],
+                pages_folder=pages_folder,
+                assets_folder=assets_folder
                 # external_stylesheets=[dbc.themes.SUPERHERO])  # vapor, superhero, quartz, solar, slate
                 )
 
