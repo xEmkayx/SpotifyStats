@@ -1,11 +1,14 @@
 # Run this app with `python app.py` and
 # visit http://127.0.0.1:8050/ in your web browser.
+import threading
+
 import dash
 import dash_bootstrap_components as dbc
 import plotly.io as pio
 from dash import Dash
-from dash import html
+from dash import html, DiskcacheManager
 from dash_bootstrap_templates import ThemeChangerAIO
+# import diskcache
 
 import analysis.graphics.webapp.helpers.setting_functions
 from pathlib import Path
@@ -37,13 +40,17 @@ theme_change = ThemeChangerAIO(aio_id="all-themes")
 
 dbc_css = "https://cdn.jsdelivr.net/gh/AnnMarieW/dash-bootstrap-templates/dbc.min.css"
 
+# cache = diskcache.Cache("./cache")
+# background_callback_manager = DiskcacheManager(cache)
+
 app = dash.Dash(__name__, use_pages=True, assets_ignore='./assets/*.css',
                 external_stylesheets=[default_theme,
                                       dbc_css
                                       ],
                 pages_folder=pages_folder,
-                assets_folder=assets_folder
+                assets_folder=assets_folder,
                 # external_stylesheets=[dbc.themes.SUPERHERO])  # vapor, superhero, quartz, solar, slate
+                # background_callback_manager=background_callback_manager
                 )
 
 
@@ -186,6 +193,12 @@ app.layout = dbc.Container(
 )
 
 
+def main(reload_df_on_start: bool = True):
+    # print('Starting webapp...')
+    if reload_df_on_start:
+        analysis.graphics.webapp.helpers.setting_functions.reset_df()
+    app.run(debug=True, threaded=True)
+
+
 if __name__ == '__main__':
-    analysis.graphics.webapp.helpers.setting_functions.reset_df()
-    app.run_server(debug=True)
+    threading.Thread(target=main(False)).start()

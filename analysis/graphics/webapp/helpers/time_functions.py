@@ -47,6 +47,9 @@ def get_standard_time():
 
 
 def timestring_to_seconds(t: str):
+    # print('timestring to seconds')
+    # print(f'parameter: {t}')
     x = time.strptime(t.split(',')[0], '%H:%M:%S')
+    # print(f'x:{x}\n')
     sec = timedelta(hours=x.tm_hour, minutes=x.tm_min, seconds=x.tm_sec).total_seconds()
     return sec

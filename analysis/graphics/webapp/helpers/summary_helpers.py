@@ -1,5 +1,6 @@
 from datetime import date, datetime
 
+import pandas
 import pandas as pd
 
 import spotipy
@@ -15,8 +16,14 @@ spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=CLIENT_ID, client_
 df = pd.read_csv(fr'{df_common_path}\{fn_df_allrounder}.csv')
 
 
+def date_mask(start_date: str, end_date: str):
+    df['Gespielt am'] = pd.to_datetime(df['Gespielt am'], format='%Y-%m-%dT%H:%M')
+    mask = (df['Gespielt am'] >= start_date) & (df['Gespielt am'] <= end_date)
+    return mask
+
+
 def get_top_songs(start_date: str = str(date(2010, 1, 1)), end_date: str = str(date.today()), return_amount: int = 10):
-    mask = (df['Gespielt am'] > start_date) & (df['Gespielt am'] <= end_date)
+    mask = date_mask(start_date, end_date)
     ndf = df.loc[mask]
 
     gr = ndf.groupby('Gespielt am').agg(
@@ -61,7 +68,7 @@ def get_song_image(song_id: str):
 
 
 def get_top_artists(start_date: str = str(date(2010, 1, 1)), end_date: str = str(date.today()), return_amount: int = 10):
-    mask = (df['Gespielt am'] > start_date) & (df['Gespielt am'] <= end_date)
+    mask = date_mask(start_date, end_date)
     ndf = df.loc[mask]
 
     gr = ndf.groupby(['Künstler', 'Künstler-ID'], as_index=False).size()
@@ -99,10 +106,10 @@ def get_artist_image(artist_id: str):
 
 
 def get_top_albums(start_date: str = str(date(2010, 1, 1)), end_date: str = str(date.today()), return_amount: int = 10):
-    mask = (df['Gespielt am'] > start_date) & (df['Gespielt am'] <= end_date)
+    mask = date_mask(start_date, end_date)
     ndf = df.loc[mask]
 
-    gr = df.groupby('Gespielt am').agg({'Album': 'first', 'Album-ID': 'first',
+    gr = ndf.groupby('Gespielt am').agg({'Album': 'first', 'Album-ID': 'first',
                                         'Künstler': ', '.join, 'Künstler-ID': ', '.join,
                                         })
     counted = gr.value_counts('Album-ID').rename({1: 'Album-ID', 2: 'Anzahl Streams'}).sort_index().reset_index()

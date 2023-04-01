@@ -1,7 +1,7 @@
 import dash
 import dash_bootstrap_components as dbc
 import plotly.express as px
-from dash import html, dcc, callback, Input, Output
+from dash import html, dcc, callback, Input, Output, DiskcacheManager
 from dash_bootstrap_templates import ThemeChangerAIO, template_from_url
 
 from analysis.graphics.webapp.helpers import summary_helpers
@@ -9,12 +9,14 @@ from analysis.graphics.webapp.helpers.df_filenames import *
 # import datetime
 from analysis.graphics.webapp.helpers.time_functions import *
 from analysis.graphics.webapp.select_statements import *
+from spotify_scripts import playlist_creator
 
-import analysis.graphics.webapp.helpers.summary_helpers
 
 dash.register_page(__name__)
 
 df = pd.read_csv(fr'{df_common_path}\{fn_df_allrounder}.csv')
+
+onscreen_songs = []
 
 # TODO: MORGENS/ABENDS
 tommorow = date(datetime.now().year, datetime.now().month, datetime.now().day + 1)
@@ -30,18 +32,43 @@ datepicker = dcc.DatePickerRange(
 
 
 def init_songs(start_date: str = str(date(datetime.now().year, 1, 1)),
-               end_date: str = str(date(datetime.now().year, datetime.now().month, datetime.now().day))):
+               end_date: str = str(date(datetime.now().year, datetime.now().month, datetime.now().day)),
+               amount: int = 10):
     songs = []
     songs_wrapper = []
-    for i in summary_helpers.get_top_songs(start_date=start_date, end_date=end_date):
+    global onscreen_songs
+    onscreen_songs.clear()
+
+    """
+    while len(onscreen_songs) > 0:
+        # onscreen_songs.clear()
+        onscreen_songs = []
+    """
+    # print(f'initsongs: initial length of onscreensongs: {len(onscreen_songs)}')
+
+    for idx, i in enumerate(summary_helpers.get_top_songs(start_date=start_date, end_date=end_date, return_amount=amount)):
+        """
         text = f"{i.artist_name} - {i.song_name}\n{i.album_name}\n " \
                f"Gestreamt: {i.streamed_amount} Mal -> ca. {i.streamed_minutes} Minuten"
+        """
+        id = i.song_id
+        onscreen_songs.append(id)
+        # print(f'idx: {idx}, song_id: {id}, length onscreensongs: {len(onscreen_songs)}')
 
         wr = html.Li(
             children=[
                 html.Img(src=i.song_image, alt='https://vectorified.com/images/no-profile-picture-icon-21.jpg'),
                 html.Div(className='overlay', children=[
-                    html.Span(text)
+                    html.Span(f"{i.artist_name}"),
+                    html.Br(),
+                    html.Span(f'{i.song_name}'),
+                    html.Br(),
+                    html.Span(f'{i.album_name}'),
+                    html.Br(),
+                    html.Span(f"{i.streamed_amount}x gestreamed"),
+                    html.Span(f'ca. {round(i.streamed_minutes, 2)} Minuten'),
+                    html.Br(),
+                    html.Span(f'({id})')
                 ])
             ]
         )
@@ -57,7 +84,12 @@ def init_songs(start_date: str = str(date(datetime.now().year, 1, 1)),
     return sum_songs
 
 
-summary_songs = init_songs()
+# summary_songs = init_songs()
+summary_songs = sum_songs = html.Div(
+    id='div-summary-songs',
+    className='div-summary-songs'
+)
+
 tab_songs = dbc.Tab(
     [
         dcc.Loading(
@@ -72,17 +104,23 @@ tab_songs = dbc.Tab(
 ##############################
 
 def init_artists(start_date: str = str(date(datetime.now().year, 1, 1)),
-                 end_date: str = str(date(datetime.now().year, datetime.now().month, datetime.now().day))):
+                 end_date: str = str(date(datetime.now().year, datetime.now().month, datetime.now().day)),
+                 amount: int = 10):
     artists = []
     artists_wrapper = []
-    for i in summary_helpers.get_top_artists(start_date=start_date, end_date=end_date):
+    for i in summary_helpers.get_top_artists(start_date=start_date, end_date=end_date, return_amount=amount):
+        """
         text = f'{i.artist_name}<br> {i.artist_id}<br> ' \
                f'Gestreamt: {i.streamed_amount} -> ca. {i.streamed_minutes} Minuten'
+        """
         wr = html.Li(
             children=[
                 html.Img(src=i.artist_image, alt='https://vectorified.com/images/no-profile-picture-icon-21.jpg'),
                 html.Div(className='overlay', children=[
-                    html.Span(text)
+                    html.Span(f'{i.artist_name}'),
+                    html.Span(f'{i.streamed_amount}x gestreamed'),
+                    html.Span(f'ca. {round(i.streamed_minutes, 2)} Minuten'),
+                    html.Span(f'({i.artist_id})')
                 ])
             ]
         )
@@ -99,7 +137,11 @@ def init_artists(start_date: str = str(date(datetime.now().year, 1, 1)),
     return sum_artists
 
 
-summary_artists = init_artists()
+# summary_artists = init_artists()
+summary_artists = html.Div(
+    id='div-summary-artists',
+    className='div-summary-songs'
+)
 tab_artists = dbc.Tab(
     [
         dcc.Loading(
@@ -115,16 +157,19 @@ tab_artists = dbc.Tab(
 
 
 def init_albums(start_date: str = str(date(datetime.now().year, 1, 1)),
-                end_date: str = str(date(datetime.now().year, datetime.now().month, datetime.now().day))):
+                end_date: str = str(date(datetime.now().year, datetime.now().month, datetime.now().day)),
+                amount: int = 10):
     albums = []
     albums_wrapper = []
-    for i in summary_helpers.get_top_albums(start_date=start_date, end_date=end_date):
+    for i in summary_helpers.get_top_albums(start_date=start_date, end_date=end_date, return_amount=amount):
         text = f'{i.album_artist} - {i.album_name}'
         wr = html.Li(
             children=[
                 html.Img(src=i.album_image, alt=''),
                 html.Div(className='overlay', children=[
-                    html.Span(text)
+                    html.Span(f'{i.album_artist}'),
+                    html.Span(f'{i.album_name}'),
+                    html.Span(f'({i.album_id})')
                 ])
             ]
         )
@@ -140,7 +185,11 @@ def init_albums(start_date: str = str(date(datetime.now().year, 1, 1)),
     return sum_albums
 
 
-summary_albums = init_albums()
+# summary_albums = init_albums()
+summary_albums = html.Div(
+    id='div-summary-albums',
+    className='div-summary-songs'
+)
 tab_albums = dbc.Tab(
     [
         dcc.Loading(
@@ -175,7 +224,7 @@ button_year = dbc.Button(
     n_clicks=0
 )
 
-buttons = dbc.ButtonGroup(
+date_buttons = dbc.ButtonGroup(
     id='btn-group-summary',
     children=[
         button_7d,
@@ -194,13 +243,44 @@ tabs = dcc.Tabs(
     className='custom-tabs-container'
 )
 
+amount_tb = dcc.Input(
+    id='inp-amount',
+    type='number',
+    value=10
+)
+
+
+playlist_button = dbc.Button(
+    'Create a Playlist from these Songs',
+    id='button-playlist',
+    outline=True,
+    color='primary',
+    n_clicks=0
+)
+
 layout = html.Div(children=[
     html.H1(children='Summary'),
     datepicker,
     html.Br(),
-    buttons,
+    date_buttons,
+    amount_tb,
+    playlist_button,
     tabs
 ])
+
+
+@callback(
+    Output('button-playlist', 'n_clicks'),
+    [Input("button-playlist", 'n_clicks'),
+     Input('date-picker-summary', 'start_date'),
+     Input('date-picker-summary', 'end_date'),
+     ],
+)
+def create_playlist_buttonclick(n_clicks, start_date, end_date):
+    if n_clicks is not None and n_clicks > 0:
+        print(f'Length of onscreen songs: {len(onscreen_songs)}\nonscreen_songs:')
+        # print(onscreen_songs.sort())
+        playlist_creator.create_playlist(song_ids=onscreen_songs, range=f'{start_date} - {end_date}')
 
 
 @callback(
@@ -213,7 +293,7 @@ layout = html.Div(children=[
     [Input("button-7d-summary", "n_clicks"),
      Input('button-month-summary', 'n_clicks'),
      Input('button-year-summary', 'n_clicks')
-     ]
+     ],
 )
 def button_events_graph(b7d, bmonth, byear):
     if b7d != 0:
@@ -239,11 +319,12 @@ def button_events_graph(b7d, bmonth, byear):
     Output('div-summary-albums', 'children'),
 
     Input('date-picker-summary', 'start_date'),
-    Input('date-picker-summary', 'end_date')
+    Input('date-picker-summary', 'end_date'),
+    Input('inp-amount', 'value'),
 )
-def update_tabs(start_date, end_date):
-    songs = init_songs(start_date, end_date)
-    artists = init_artists(start_date, end_date)
-    albums = init_albums(start_date, end_date)
+def update_tabs(start_date, end_date, amount):
+    songs = init_songs(start_date, end_date, amount)
+    artists = init_artists(start_date, end_date, amount)
+    albums = init_albums(start_date, end_date, amount)
 
     return songs, artists, albums
