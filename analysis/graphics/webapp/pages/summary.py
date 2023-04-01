@@ -11,10 +11,10 @@ from analysis.graphics.webapp.helpers.time_functions import *
 from analysis.graphics.webapp.select_statements import *
 from spotify_scripts import playlist_creator
 
-
 dash.register_page(__name__)
 
-df = pd.read_csv(fr'{df_common_path}\{fn_df_allrounder}.csv')
+df_orig = pd.read_csv(fr'{df_common_path}\{fn_df_allrounder}.csv')
+df = summary_helpers.normalize_to_minutes(df_orig).sort_values('Anzahl Streams')
 
 onscreen_songs = []
 
@@ -33,7 +33,7 @@ datepicker = dcc.DatePickerRange(
 
 def init_songs(start_date: str = str(date(datetime.now().year, 1, 1)),
                end_date: str = str(date(datetime.now().year, datetime.now().month, datetime.now().day)),
-               amount: int = 10):
+               amount: int = 10, sorted_by_minutes: bool = False):
     songs = []
     songs_wrapper = []
     global onscreen_songs
@@ -46,7 +46,9 @@ def init_songs(start_date: str = str(date(datetime.now().year, 1, 1)),
     """
     # print(f'initsongs: initial length of onscreensongs: {len(onscreen_songs)}')
 
-    for idx, i in enumerate(summary_helpers.get_top_songs(start_date=start_date, end_date=end_date, return_amount=amount)):
+    for idx, i in enumerate(
+            summary_helpers.get_top_songs(start_date=start_date, end_date=end_date, return_amount=amount,
+                                          sorted_by_mins=sorted_by_minutes)):
         """
         text = f"{i.artist_name} - {i.song_name}\n{i.album_name}\n " \
                f"Gestreamt: {i.streamed_amount} Mal -> ca. {i.streamed_minutes} Minuten"
@@ -243,12 +245,13 @@ tabs = dcc.Tabs(
     className='custom-tabs-container'
 )
 
-amount_tb = dcc.Input(
+# amount_tb = dbc.Input(
+amount_tb = dbc.Input(
     id='inp-amount',
     type='number',
-    value=10
+    value=10,
+    className='inp-summary'
 )
-
 
 playlist_button = dbc.Button(
     'Create a Playlist from these Songs',
@@ -258,6 +261,24 @@ playlist_button = dbc.Button(
     n_clicks=0
 )
 
+streamed_by_buttons = html.Div(
+    [
+        dbc.RadioItems(
+            id="streamed-by-radios",
+            className="btn-group",
+            inputClassName="btn-check",
+            labelClassName="btn btn-outline-primary",
+            labelCheckedClassName="active",
+            options=[
+                {"label": "Sort by total count of Streams", "value": 1},
+                {"label": "Sort by total streamed minutes", "value": 2},
+            ],
+            value=1,
+        )
+    ],
+    className="radio-group",
+)
+
 layout = html.Div(children=[
     html.H1(children='Summary'),
     datepicker,
@@ -265,6 +286,7 @@ layout = html.Div(children=[
     date_buttons,
     amount_tb,
     playlist_button,
+    streamed_by_buttons,
     tabs
 ])
 
@@ -318,12 +340,19 @@ def button_events_graph(b7d, bmonth, byear):
     Output('div-summary-artists', 'children'),
     Output('div-summary-albums', 'children'),
 
-    Input('date-picker-summary', 'start_date'),
-    Input('date-picker-summary', 'end_date'),
-    Input('inp-amount', 'value'),
+    [Input('date-picker-summary', 'start_date'),
+     Input('date-picker-summary', 'end_date'),
+     Input('inp-amount', 'value'),
+     Input("streamed-by-radios", "value")],
 )
-def update_tabs(start_date, end_date, amount):
-    songs = init_songs(start_date, end_date, amount)
+def update_tabs(start_date, end_date, amount, radio_values):
+    sorted_by_minutes = False
+    if radio_values == 1:
+        sorted_by_minutes = False
+    else:
+        sorted_by_minutes = True
+
+    songs = init_songs(start_date, end_date, amount, sorted_by_minutes)
     artists = init_artists(start_date, end_date, amount)
     albums = init_albums(start_date, end_date, amount)
 

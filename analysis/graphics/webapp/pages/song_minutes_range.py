@@ -1,5 +1,6 @@
 import dash
 import dash_bootstrap_components as dbc
+import pandas as pd
 import plotly.express as px
 from dash import html, dcc, callback, Input, Output
 from dash_bootstrap_templates import ThemeChangerAIO, template_from_url
@@ -8,21 +9,21 @@ from analysis.graphics.webapp.helpers.df_filenames import *
 # import datetime as dt
 from analysis.graphics.webapp.helpers.time_functions import *
 from analysis.graphics.webapp.select_statements import *
-from analysis.graphics.webapp.helpers.summary_helpers import date_mask
+from analysis.graphics.webapp.helpers.summary_helpers import date_mask, normalize_to_minutes
 
 dash.register_page(__name__)
 
 df = pd.read_csv(fr'{df_common_path}\{fn_df_allrounder}.csv')
 
 graph = dcc.Graph(
-    id='played-at-plot',
+    id='stream-minutes-plot',
 )
 
 # TODO: MORGENS/ABENDS
 tommorow = date(datetime.now().year, datetime.now().month, datetime.now().day + 1)
 
 datepicker = dcc.DatePickerRange(
-    id='date-picker-range',
+    id='stream-minutes-date-picker-minutes',
     min_date_allowed=date(2010, 1, 1),
     max_date_allowed=tommorow,  # date(2022, 12, 12),  #
     initial_visible_month=date.today(),  # date(2022, 11, 1),  #
@@ -31,7 +32,7 @@ datepicker = dcc.DatePickerRange(
 )
 
 hoerzeit = html.Div(
-    id='hoerzeit-pa-range'
+    id='hoerzeit-minutes-sm'
 )
 hz_neu = html.Center(
     html.Div(
@@ -40,22 +41,22 @@ hz_neu = html.Center(
         children=[
             html.Div(
                 className='date',
-                id='days'
+                id='sm-days'
             ),
             html.Label('D', className='date-text'),
             html.Div(
                 className='date',
-                id='hours'
+                id='hours-sm'
             ),
             html.Label('H', className='date-text'),
             html.Div(
                 className='date',
-                id='minutes'
+                id='sm-minutes'
             ),
             html.Label('M', className='date-text'),
             html.Div(
                 className='date',
-                id='seconds'
+                id='sm-seconds'
             ),
             html.Label('S', className='date-text', style={'margin-right': '10px'}),
         ]
@@ -65,7 +66,7 @@ hz_neu = html.Center(
 
 button_7d = dbc.Button(
     'Letzte 7 Tage',
-    id='button-7d',
+    id='stream-minutes-button-7d-s-minutes',
     outline=True,
     color='primary',
     n_clicks=0
@@ -73,7 +74,7 @@ button_7d = dbc.Button(
 
 button_month = dbc.Button(
     'Letzter Monat',
-    id='button-month',
+    id='stream-minutes-button-month-s-minutes',
     outline=True,
     color='primary',
     n_clicks=0
@@ -81,7 +82,7 @@ button_month = dbc.Button(
 
 button_year = dbc.Button(
     'Letztes Jahr',
-    id='button-year',
+    id='stream-minutes-button-year-s-minutes',
     outline=True,
     color='primary',
     n_clicks=0
@@ -96,23 +97,12 @@ buttons = dbc.ButtonGroup(
     ]
 )
 
-toast = dbc.Toast(
-    [html.P(f"Button pressed", className="mb-0")],
-    header="Toast",
-    # duration=4000,
-    dismissable=True,
-    id='toast1',
-    icon="warning",
-    is_open=False,
-    style={"position": "fixed", "top": 66, "right": 10, "width": 350},
-)
-
-tabelle = dbc.Table.from_dataframe(df.head(n=100), striped=True, bordered=True, hover=True, id='tab-pa-range')
+tabelle = dbc.Table.from_dataframe(df.head(n=100), striped=True, bordered=True, hover=True, id='tab-s-minutes')
 
 tab_normal = dbc.Tab(
     [
         dcc.Loading(
-            id='load-pa-range',
+            id='load-s-minutes',
             children=[graph],
         ),
     ],
@@ -123,7 +113,7 @@ tab_tabelle = dbc.Tab(
     [
         dcc.Loading(
             [tabelle],
-            id='load-pa-range-tab'
+            id='load-s-minutes-tab'
         )
     ],
     label='Tabelle',
@@ -140,7 +130,6 @@ tabs = dcc.Tabs(
 )
 
 layout = html.Div(children=[
-    toast,
     html.H1(children='Top Song streams in range'),
     datepicker,
     html.Br(),
@@ -152,53 +141,49 @@ layout = html.Div(children=[
 
 
 @callback(
-    Output("played-at-plot", "figure"),
-    Output('hoerzeit-pa-range', 'children'),
-    Output('days', 'children'),
-    Output('hours', 'children'),
-    Output('minutes', 'children'),
-    Output('seconds', 'children'),
+    Output("stream-minutes-plot", "figure"),
+    Output('hoerzeit-minutes-sm', 'children'),
+    Output('sm-days', 'children'),
+    Output('hours-sm', 'children'),
+    Output('sm-minutes', 'children'),
+    Output('sm-seconds', 'children'),
     Input(ThemeChangerAIO.ids.radio("all-themes"), "value"),
-    Input('date-picker-range', 'start_date'),
-    Input('date-picker-range', 'end_date'),
+    Input('stream-minutes-date-picker-minutes', 'start_date'),
+    Input('stream-minutes-date-picker-minutes', 'end_date'),
     [  # Input('btn-group', 'submit'),
-        Input("button-7d", "n_clicks"),
-        Input('button-month', 'n_clicks'),
-        Input('button-year', 'n_clicks')
+        Input("stream-minutes-button-7d-s-minutes", "n_clicks"),
+        Input('stream-minutes-button-month-s-minutes', 'n_clicks'),
+        Input('stream-minutes-button-year-s-minutes', 'n_clicks')
     ]
 )
 def update_graph_theme(theme, start_date, end_date, btn_7d, btn_m, btn_y):
     btn_7d = btn_m = btn_y = 0
 
-    mask = (df['Gespielt am'] > start_date) & (df['Gespielt am'] <= end_date)
+    # mask = (df['Gespielt am'] > start_date) & (df['Gespielt am'] <= end_date)
+    mask = date_mask(start_date, end_date)
     ndf = df.loc[mask]
 
-    sum = pd.to_timedelta('00:' + ndf["Songlänge"]).sum()
-    sum_conv = strfdelta(sum, "{days} Tage, {hours} Stunden, {minutes} Minuten und {seconds} Sekunden")
+    stream_sum = pd.to_timedelta('00:' + ndf["Songlänge"]).sum()
+    sum_conv = strfdelta(stream_sum, "{days} Tage, {hours} Stunden, {minutes} Minuten und {seconds} Sekunden")
     sum_text = f'(Ungefähre) Gesamte Hörzeit: {sum_conv}'
-    days = strfdelta(sum, "{days}")
-    hours = strfdelta(sum, "{hours}")
-    minutes = strfdelta(sum, "{minutes}")
-    seconds = strfdelta(sum, "{seconds}")
+    days = strfdelta(stream_sum, "{days}")
+    hours = strfdelta(stream_sum, "{hours}")
+    minutes = strfdelta(stream_sum, "{minutes}")
+    seconds = strfdelta(stream_sum, "{seconds}")
 
-    gr = ndf.groupby('Gespielt am').agg(
-        {'Song-ID': 'first', 'Song': 'first', 'Künstler': ', '.join, 'Künstler-ID': ', '.join,
-         'Album': 'first', 'Album-ID': 'first'})
+    df_combined = normalize_to_minutes(ndf)
 
-    counted = gr.value_counts('Song-ID').rename({1: 'Song-ID', 2: 'Anzahl Streams'}).sort_index().reset_index()
-    counted.set_axis(['Song-ID', 'Anzahl Streams'], axis=1, inplace=True)
-    rest = gr.reset_index().drop('Gespielt am', axis=1).drop_duplicates('Song-ID').sort_values('Song-ID')
-    df_combined = pd.merge(counted, rest).sort_values('Anzahl Streams', ascending=False)
-
-    fig = px.line(df_combined.head(n=100), x="Song", y="Anzahl Streams", template=template_from_url(theme),
+    fig = px.line(df_combined.head(n=100), x="Song", y="Streamed Mins", template=template_from_url(theme),
                   markers=True, height=1000,
                   # title=f'Streamzahlen aller Künstler"',
-                  custom_data=['Song', 'Anzahl Streams', 'Song-ID', 'Künstler', 'Künstler-ID', 'Album', 'Album-ID'])
+                  custom_data=['Song', 'Anzahl Streams', 'Song-ID', 'Künstler', 'Künstler-ID', 'Album', 'Album-ID',
+                               'Streamed Mins'])
 
     fig.update_traces(
         hovertemplate="<br>".join([
             "Song: %{customdata[0]}",
             "Anzahl Streams: %{customdata[1]}",
+            "Streamed Mins: %{customdata[7]}",
             "Song-ID: %{customdata[2]}",
             "Künstler: %{customdata[3]}",
             "Künstler-ID: %{customdata[4]}",
@@ -210,15 +195,15 @@ def update_graph_theme(theme, start_date, end_date, btn_7d, btn_m, btn_y):
 
 
 @callback(
-    Output('date-picker-range', 'start_date'),
-    Output('date-picker-range', 'end_date'),
-    Output('button-7d', 'n_clicks'),
-    Output('button-month', 'n_clicks'),
-    Output('button-year', 'n_clicks'),
+    Output('stream-minutes-date-picker-minutes', 'start_date'),
+    Output('stream-minutes-date-picker-minutes', 'end_date'),
+    Output('stream-minutes-button-7d-s-minutes', 'n_clicks'),
+    Output('stream-minutes-button-month-s-minutes', 'n_clicks'),
+    Output('stream-minutes-button-year-s-minutes', 'n_clicks'),
 
-    [Input("button-7d", "n_clicks"),
-     Input('button-month', 'n_clicks'),
-     Input('button-year', 'n_clicks')
+    [Input("stream-minutes-button-7d-s-minutes", "n_clicks"),
+     Input('stream-minutes-button-month-s-minutes', 'n_clicks'),
+     Input('stream-minutes-button-year-s-minutes', 'n_clicks')
      ]
 )
 def button_events_graph(b7d, bmonth, byear):
@@ -238,21 +223,23 @@ def button_events_graph(b7d, bmonth, byear):
 
 
 @callback(
-    Output('tab-pa-range', 'children'),
+    Output('tab-s-minutes', 'children'),
     # TODO:
-    # Output('hoerzeit-pa-range', 'children'),
-    # Output('days', 'children'),
-    # Output('hours', 'children'),
-    # Output('minutes', 'children'),
-    # Output('seconds', 'children'),
-    Input('date-picker-range', 'start_date'),
-    Input('date-picker-range', 'end_date'),
+    # Output('hoerzeit-minutes-sm', 'children'),
+    # Output('sm-days', 'children'),
+    # Output('hours-sm', 'children'),
+    # Output('sm-minutes', 'children'),
+    # Output('sm-seconds', 'children'),
+    Input('stream-minutes-date-picker-minutes', 'start_date'),
+    Input('stream-minutes-date-picker-minutes', 'end_date'),
 )
 def update_table(start_date, end_date):
     # mask = (df['Gespielt am'] > start_date) & (df['Gespielt am'] <= end_date)
     mask = date_mask(start_date, end_date)
     ndf = df.loc[mask]
 
+    df_combined = normalize_to_minutes(ndf)
+    """
     gr = ndf.groupby('Gespielt am').agg(
         {'Song-ID': 'first', 'Song': 'first', 'Künstler': ', '.join, 'Künstler-ID': ', '.join,
          'Album': 'first', 'Album-ID': 'first'})
@@ -261,6 +248,7 @@ def update_table(start_date, end_date):
     counted.set_axis(['Song-ID', 'Anzahl Streams'], axis=1, inplace=True)
     rest = gr.reset_index().drop('Gespielt am', axis=1).drop_duplicates('Song-ID').sort_values('Song-ID')
     df_combined = pd.merge(counted, rest).sort_values('Anzahl Streams', ascending=False)
+    """
 
     tab = dbc.Table.from_dataframe(df_combined.head(n=1000), striped=True, bordered=True, hover=True)
     return tab

@@ -22,32 +22,40 @@ def date_mask(start_date: str, end_date: str):
     return mask
 
 
-def get_top_songs(start_date: str = str(date(2010, 1, 1)), end_date: str = str(date.today()), return_amount: int = 10):
+def get_top_songs(start_date: str = str(date(2010, 1, 1)), end_date: str = str(date.today()), return_amount: int = 10,
+                  sorted_by_mins: bool = False):
     mask = date_mask(start_date, end_date)
     ndf = df.loc[mask]
 
-    gr = ndf.groupby('Gespielt am').agg(
-        {'Song-ID': 'first', 'Song': 'first', 'Künstler': ', '.join, 'Künstler-ID': ', '.join,
-         'Album': 'first', 'Album-ID': 'first', 'Songlänge': 'first'})
+    if sorted_by_mins:
+        df_combined = normalize_to_minutes(ndf.copy(deep=True))
+    else:
+        gr = ndf.groupby('Gespielt am').agg(
+            {'Song-ID': 'first', 'Song': 'first', 'Künstler': ', '.join, 'Künstler-ID': ', '.join,
+             'Album': 'first', 'Album-ID': 'first', 'Songlänge': 'first'})
 
-    counted = gr.value_counts('Song-ID').rename({1: 'Song-ID', 2: 'Anzahl Streams'}).sort_index().reset_index()
-    counted.set_axis(['Song-ID', 'Anzahl Streams'], axis=1, inplace=True)
-    rest = gr.reset_index().drop('Gespielt am', axis=1).drop_duplicates('Song-ID').sort_values('Song-ID')
-    df_combined = pd.merge(counted, rest).sort_values('Anzahl Streams', ascending=False)
+        counted = gr.value_counts('Song-ID').rename({1: 'Song-ID', 2: 'Anzahl Streams'}).sort_index().reset_index()
+        counted.set_axis(['Song-ID', 'Anzahl Streams'], axis=1, inplace=True)
+        rest = gr.reset_index().drop('Gespielt am', axis=1).drop_duplicates('Song-ID').sort_values('Song-ID')
+        df_combined = pd.merge(counted, rest).sort_values('Anzahl Streams', ascending=False)
     df_top_x = df_combined.head(return_amount)
     song_card_list: list[summary_cards.SongSummary] = []
-    for row in df_top_x.iterrows():
-        song_id = row[1][0]
-        anz_streams = row[1][1]
-        song_name = row[1][2]
-        artist_name = row[1][3]
-        artist_id = row[1][4]
-        album_name = row[1][5]
-        album_id = row[1][6]
-        song_length = f'00:{row[1][7]}'
+
+    for index, row in df_top_x.iterrows():
+        song_id = row['Song-ID']
+        anz_streams = row['Anzahl Streams']
+        song_name = row['Song']
+        artist_name = row['Künstler']
+        # artist_id = row['Künstler-ID']
+        album_name = row['Album']
+        # album_id = row['Album-ID']
+        song_length = f'00:{row["Songlänge"]}'
         song_image = get_song_image(song_id)
 
-        song_length_seconds = time_functions.timestring_to_seconds(song_length)
+        if len(df_top_x.columns) > 8:
+            streamed_minutes = row['Streamed Mins']
+        else:
+            streamed_minutes = (time_functions.timestring_to_seconds(song_length) * anz_streams) / 60
 
         song_card_list.append(summary_cards.SongSummary(
             song_id=song_id,
@@ -56,7 +64,8 @@ def get_top_songs(start_date: str = str(date(2010, 1, 1)), end_date: str = str(d
             album_name=album_name,
             song_image=song_image,
             streamed_amount=anz_streams,
-            streamed_minutes=(song_length_seconds * anz_streams)/60
+            streamed_minutes=streamed_minutes
+            # streamed_minutes = song_length_seconds * anz_streams
         ))
     return song_card_list
 
@@ -67,7 +76,8 @@ def get_song_image(song_id: str):
     return image_link
 
 
-def get_top_artists(start_date: str = str(date(2010, 1, 1)), end_date: str = str(date.today()), return_amount: int = 10):
+def get_top_artists(start_date: str = str(date(2010, 1, 1)), end_date: str = str(date.today()), return_amount: int = 10,
+                  sorted_by_mins: bool = False):
     mask = date_mask(start_date, end_date)
     ndf = df.loc[mask]
 
@@ -105,7 +115,8 @@ def get_artist_image(artist_id: str):
         return 'https://vectorified.com/images/no-profile-picture-icon-21.jpg'
 
 
-def get_top_albums(start_date: str = str(date(2010, 1, 1)), end_date: str = str(date.today()), return_amount: int = 10):
+def get_top_albums(start_date: str = str(date(2010, 1, 1)), end_date: str = str(date.today()), return_amount: int = 10,
+                  sorted_by_mins: bool = False):
     mask = date_mask(start_date, end_date)
     ndf = df.loc[mask]
 
@@ -142,6 +153,36 @@ def get_album_image(album_id: str):
     album = spotify.album(album_id)
     img_link = album['images'][0]['url']
     return img_link
+
+
+def normalize_to_minutes(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Normalizes a DataFrame, so it's sorted by its total streamed minutes
+    :param df: DataFrame to normalize
+    :return: normalized DataFrame
+    """
+    ndf = df
+    gr = ndf.groupby('Gespielt am').agg(
+        {'Song-ID': 'first', 'Song': 'first', 'Künstler': ', '.join, 'Künstler-ID': ', '.join, 'Songlänge': 'first',
+         'Album': 'first', 'Album-ID': 'first'})
+
+    counted = gr.value_counts('Song-ID').rename({1: 'Song-ID', 2: 'Anzahl Streams'}).sort_index().reset_index()
+
+    gr['Songlänge'] = pd.to_datetime(gr['Songlänge'], format='%H:%M:%S', errors='coerce').fillna(
+        pd.to_datetime(gr['Songlänge'],
+                       format='%M:%S'))
+
+    gr['Songlänge'] = gr['Songlänge'].dt.time
+    gr['Songlänge'] = gr['Songlänge'].astype(str)
+
+    counted.set_axis(['Song-ID', 'Anzahl Streams'], axis=1, inplace=True)
+    rest = gr.reset_index().drop('Gespielt am', axis=1).drop_duplicates('Song-ID').sort_values('Song-ID')
+    df_combined = pd.merge(counted, rest).sort_values('Anzahl Streams', ascending=False)
+
+    df_combined['Dauer Sekunden'] = pd.to_timedelta(df_combined['Songlänge']).dt.total_seconds()
+    df_combined['Streamed Mins'] = df_combined['Anzahl Streams'] * (df_combined['Dauer Sekunden'] / 60)
+    df_combined = df_combined.sort_values('Streamed Mins', ascending=False)
+    return df_combined
 
 
 if __name__ == '__main__':
