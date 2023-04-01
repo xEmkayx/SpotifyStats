@@ -278,7 +278,7 @@ layout = html.Div(children=[
 )
 def create_playlist_buttonclick(n_clicks, start_date, end_date):
     if n_clicks is not None and n_clicks > 0:
-        print(f'Length of onscreen songs: {len(onscreen_songs)}\nonscreen_songs:')
+        # print(f'Length of onscreen songs: {len(onscreen_songs)}\nonscreen_songs:')
         # print(onscreen_songs.sort())
         playlist_creator.create_playlist(song_ids=onscreen_songs, range=f'{start_date} - {end_date}')
 
