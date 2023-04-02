@@ -14,7 +14,7 @@ dash.register_page(__name__)
 # df = pd.read_csv(fr'{df_common_path}\{fn_df_allrounder}.csv')
 df = dataframe_loader.get_default_dataframe()
 
-gr = df.groupby('Gespielt am').agg({'Song-ID':'first', 'Song':'first', 'Künstler':', '.join, 'Künstler-ID':', '.join,
+gr = df.groupby('Gespielt am').agg({'Song-ID':'first', 'Song':'first', 'Artist':', '.join, 'Artist-ID':', '.join,
                                     'Album':'first', 'Album-ID':'first'})
 
 counted = gr.value_counts('Song-ID').rename({1:'Song-ID', 2:'Anzahl Streams'}).sort_index().reset_index()
@@ -75,18 +75,18 @@ def update_graph(art_name, limit, rbvalue, theme):
     art_name = str(art_name)
     # TODO: REGEX BUTTON
     if rbvalue == 1:
-        df_filtered = df_combined[df_combined['Künstler'].str.contains(str(art_name), case=False)].head(n=limit)
+        df_filtered = df_combined[df_combined['Artist'].str.contains(str(art_name), case=False)].head(n=limit)
     elif rbvalue == 2:
-        df_filtered = df_combined[df_combined['Künstler-ID'].str.contains(str(art_name), case=False)].head(n=limit)
+        df_filtered = df_combined[df_combined['Artist-ID'].str.contains(str(art_name), case=False)].head(n=limit)
     else:
-        df_filtered = df_combined[df_combined['Künstler'].str.contains(str(art_name), case=False)].head(n=limit)
+        df_filtered = df_combined[df_combined['Artist'].str.contains(str(art_name), case=False)].head(n=limit)
 
     single_artist_barchart = px.bar(df_filtered, y='Song', x='Anzahl Streams',
                                     title=f'Songs von "{art_name}"', height=1000,
                                     text_auto='.2s', orientation='h',
                                     color='Anzahl Streams', color_continuous_scale=default_color_scale,
                                     template=template_from_url(theme),
-                                    custom_data=['Künstler', 'Song', 'Anzahl Streams'])
+                                    custom_data=['Artist', 'Song', 'Anzahl Streams'])
     single_artist_barchart.update_traces(textfont_size=12, textangle=0, textposition="outside", cliponaxis=False)
     single_artist_barchart.update_layout(yaxis=dict(autorange="reversed"))
 
@@ -99,7 +99,7 @@ def update_graph(art_name, limit, rbvalue, theme):
 
     single_artist_barchart.update_traces(
         hovertemplate="<br>".join([
-            "Künstler: %{customdata[0]}",
+            "Artist: %{customdata[0]}",
             "Song: %{customdata[1]}",
             "Streams: %{customdata[2]}"
         ])

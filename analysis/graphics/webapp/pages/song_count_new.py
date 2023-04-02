@@ -14,7 +14,7 @@ dash.register_page(__name__)
 df = dataframe_loader.get_default_dataframe()
 
 gr = df.groupby('Gespielt am').agg(
-    {'Song-ID': 'first', 'Song': 'first', 'Künstler': ', '.join, 'Künstler-ID': ', '.join,
+    {'Song-ID': 'first', 'Song': 'first', 'Artist': ', '.join, 'Artist-ID': ', '.join,
      'Album': 'first', 'Album-ID': 'first'})
 
 counted = gr.value_counts('Song-ID').rename({1: 'Song-ID', 2: 'Anzahl Streams'}).sort_index().reset_index()
@@ -83,15 +83,15 @@ def update_graph_theme(theme):
     fig = px.line(df_combined.head(n=100), x="Song", y="Anzahl Streams", template=template_from_url(theme),
                   markers=True, height=1000,
                   title=f'Streamzahlen aller Songs',
-                  custom_data=['Song', 'Anzahl Streams', 'Song-ID', 'Künstler', 'Künstler-ID', 'Album', 'Album-ID'])
+                  custom_data=['Song', 'Anzahl Streams', 'Song-ID', 'Artist', 'Artist-ID', 'Album', 'Album-ID'])
 
     fig.update_traces(
         hovertemplate="<br>".join([
             "Song: %{customdata[0]}",
             "Anzahl Streams: %{customdata[1]}",
             "Song-ID: %{customdata[2]}",
-            "Künstler: %{customdata[3]}",
-            "Künstler-ID(s): %{customdata[4]}",
+            "Artist: %{customdata[3]}",
+            "Artist-ID(s): %{customdata[4]}",
             "Album: %{customdata[5]}",
             "Album-ID: %{customdata[6]}",
         ])

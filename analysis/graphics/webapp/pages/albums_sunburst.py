@@ -15,7 +15,7 @@ dash.register_page(__name__)
 df = dataframe_loader.get_default_dataframe()
 
 gr = df.groupby('Gespielt am').agg(
-    {'Song-ID': 'first', 'Song': 'first', 'Künstler': ', '.join, 'Künstler-ID': ', '.join,
+    {'Song-ID': 'first', 'Song': 'first', 'Artist': ', '.join, 'Artist-ID': ', '.join,
      'Album': 'first', 'Album-ID': 'first'})
 
 counted = gr.value_counts('Song-ID').rename({1: 'Song-ID', 2: 'Anzahl Streams'}).sort_index().reset_index()

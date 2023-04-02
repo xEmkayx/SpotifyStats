@@ -14,7 +14,7 @@ dash.register_page(__name__)
 df = dataframe_loader.get_default_dataframe()
 
 gr = df.groupby('Gespielt am').agg(
-    {'Song-ID': 'first', 'Song': 'first', 'Künstler': ', '.join, 'Künstler-ID': ', '.join,
+    {'Song-ID': 'first', 'Song': 'first', 'Artist': ', '.join, 'Artist-ID': ', '.join,
      'Album': 'first', 'Album-ID': 'first'})
 
 counted = gr.value_counts('Song-ID').rename({1: 'Song-ID', 2: 'Anzahl Streams'}).sort_index().reset_index()
@@ -90,7 +90,7 @@ def update_graph(alb_name, limit, rbvalue, theme):
                                    orientation='h',
                                    color='Anzahl Streams', color_continuous_scale=default_color_scale,
                                    template=template_from_url(theme),
-                                   custom_data=['Album', 'Künstler', 'Song', 'Anzahl Streams'])
+                                   custom_data=['Album', 'Artist', 'Song', 'Anzahl Streams'])
     single_album_barchart.update_traces(textfont_size=12, textangle=0, textposition="outside", cliponaxis=False)
     single_album_barchart.update_layout(yaxis=dict(autorange="reversed"))
 
@@ -104,7 +104,7 @@ def update_graph(alb_name, limit, rbvalue, theme):
     single_album_barchart.update_traces(
         hovertemplate="<br>".join([
             "Album: %{customdata[0]}",
-            "Künstler: %{customdata[1]}",
+            "Artist: %{customdata[1]}",
             "Song: %{customdata[2]}",
             "Streams: %{customdata[3]}"
         ])

@@ -22,8 +22,8 @@ def allrounder() -> pd.DataFrame():
 
     sql_select_basic = dbops.custom_sql_statement(sql_basic)
 
-    df_basic = pd.DataFrame(sql_select_basic, columns=['Gespielt am', 'Song', 'Song-ID', 'Künstler',
-                                                       'Künstler-ID', 'Album', 'Album-ID', 'Songlänge'])
+    df_basic = pd.DataFrame(sql_select_basic, columns=['Gespielt am', 'Song', 'Song-ID', 'Artist',
+                                                       'Artist-ID', 'Album', 'Album-ID', 'Songlänge'])
 
     print('5 most recent entries:')
     print(df_basic.tail(n=5).to_string())

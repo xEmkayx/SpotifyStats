@@ -15,7 +15,7 @@ dash.register_page(__name__)
 # df = pd.read_csv(fr'{df_common_path}\{fn_df_allrounder}.csv')
 df = dataframe_loader.get_default_dataframe()
 
-gr = df.groupby('Gespielt am').agg({'Song-ID':'first', 'Song':'first', 'Künstler':', '.join, 'Künstler-ID':', '.join,
+gr = df.groupby('Gespielt am').agg({'Song-ID':'first', 'Song':'first', 'Artist':', '.join, 'Artist-ID':', '.join,
                                     'Album':'first', 'Album-ID':'first'})
 
 counted = gr.value_counts('Song-ID').rename({1:'Song-ID', 2:'Anzahl Streams'}).sort_index().reset_index()
@@ -45,12 +45,12 @@ layout = html.Div(children=[
 )
 def update_graph_theme(theme):
     song_streams_plot = px.sunburst(df_combined.head(n=1000),
-                                    path=['Künstler', 'Album', 'Song'], values='Anzahl Streams',
+                                    path=['Artist', 'Album', 'Song'], values='Anzahl Streams',
                                     title='Anzahl aller Song Streams',
                                     color='Anzahl Streams', color_continuous_scale=default_color_scale,
                                     template=template_from_url(theme),
                                     height=1000,
-                                    custom_data=['Song', 'Anzahl Streams', 'Song-ID', 'Künstler', 'Künstler-ID',
+                                    custom_data=['Song', 'Anzahl Streams', 'Song-ID', 'Artist', 'Artist-ID',
                                                  'Album', 'Album-ID'])
 
     # song_streams_plot.update_layout(
@@ -64,8 +64,8 @@ def update_graph_theme(theme):
             "Song: %{customdata[0]}",
             "Anzahl Streams: %{customdata[1]}",
             "Song-ID: %{customdata[2]}",
-            "Künstler: %{customdata[3]}",
-            "Künstler-ID(s): %{customdata[4]}",
+            "Artist: %{customdata[3]}",
+            "Artist-ID(s): %{customdata[4]}",
             "Album: %{customdata[5]}",
             "Album-ID: %{customdata[6]}",
         ])

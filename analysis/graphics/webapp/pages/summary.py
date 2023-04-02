@@ -1,14 +1,10 @@
 import dash
 import dash_bootstrap_components as dbc
-import plotly.express as px
 from dash import html, dcc, callback, Input, Output, DiskcacheManager
 from dash_bootstrap_templates import ThemeChangerAIO, template_from_url
 
 from analysis.graphics.webapp.helpers import summary_helpers
-from analysis.graphics.webapp.helpers.df_filenames import *
-# import datetime
 from analysis.graphics.webapp.helpers.time_functions import *
-from analysis.graphics.webapp.select_statements import *
 from spotify_scripts import playlist_creator
 
 dash.register_page(__name__)
@@ -39,23 +35,11 @@ def init_songs(start_date: str = str(date(datetime.now().year, 1, 1)),
     global onscreen_songs
     onscreen_songs.clear()
 
-    """
-    while len(onscreen_songs) > 0:
-        # onscreen_songs.clear()
-        onscreen_songs = []
-    """
-    # print(f'initsongs: initial length of onscreensongs: {len(onscreen_songs)}')
-
     for idx, i in enumerate(
             summary_helpers.get_top_songs(start_date=start_date, end_date=end_date, return_amount=amount,
                                           sorted_by_mins=sorted_by_minutes)):
-        """
-        text = f"{i.artist_name} - {i.song_name}\n{i.album_name}\n " \
-               f"Gestreamt: {i.streamed_amount} Mal -> ca. {i.streamed_minutes} Minuten"
-        """
         id = i.song_id
         onscreen_songs.append(id)
-        # print(f'idx: {idx}, song_id: {id}, length onscreensongs: {len(onscreen_songs)}')
 
         wr = html.Li(
             children=[
@@ -86,7 +70,6 @@ def init_songs(start_date: str = str(date(datetime.now().year, 1, 1)),
     return sum_songs
 
 
-# summary_songs = init_songs()
 summary_songs = sum_songs = html.Div(
     id='div-summary-songs',
     className='div-summary-songs'
@@ -111,10 +94,6 @@ def init_artists(start_date: str = str(date(datetime.now().year, 1, 1)),
     artists = []
     artists_wrapper = []
     for i in summary_helpers.get_top_artists(start_date=start_date, end_date=end_date, return_amount=amount):
-        """
-        text = f'{i.artist_name}<br> {i.artist_id}<br> ' \
-               f'Gestreamt: {i.streamed_amount} -> ca. {i.streamed_minutes} Minuten'
-        """
         wr = html.Li(
             children=[
                 html.Img(src=i.artist_image, alt='https://vectorified.com/images/no-profile-picture-icon-21.jpg'),
@@ -245,7 +224,6 @@ tabs = dcc.Tabs(
     className='custom-tabs-container'
 )
 
-# amount_tb = dbc.Input(
 amount_tb = dbc.Input(
     id='inp-amount',
     type='number',

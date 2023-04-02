@@ -19,7 +19,7 @@ dash.register_page(__name__)
 df = dataframe_loader.get_default_dataframe()
 
 gr = df.groupby('Gespielt am').agg({'Album': 'first', 'Album-ID': 'first',
-                                    'Künstler': ', '.join, 'Künstler-ID': ', '.join,
+                                    'Artist': ', '.join, 'Artist-ID': ', '.join,
                                     })
 counted = gr.value_counts('Album-ID').rename({1: 'Album-ID', 2: 'Anzahl Streams'}).sort_index().reset_index()
 counted.set_axis(['Album-ID', 'Anzahl Streams'], axis=1, inplace=True)
@@ -44,7 +44,7 @@ def update_graph_theme(theme):
     all_albums_plot = px.bar(df_combined.head(n=50), x='Album', y="Anzahl Streams", height=1000,  # markers=True,
                              title='Top Albums Streams',
                              color='Anzahl Streams', color_continuous_scale=default_color_scale,
-                             custom_data=['Album', 'Anzahl Streams', 'Künstler', 'Album-ID', 'Künstler-ID'],
+                             custom_data=['Album', 'Anzahl Streams', 'Artist', 'Album-ID', 'Artist-ID'],
                              template=template_from_url(theme)
                              )
 
@@ -52,9 +52,9 @@ def update_graph_theme(theme):
         hovertemplate="<br>".join([
             "Album: %{customdata[0]}",
             "Anzahl Streams: %{customdata[1]}",
-            "Künstler: %{customdata[2]}",
+            "Artist: %{customdata[2]}",
             "Album-ID: %{customdata[3]}",
-            "Künstler-ID: %{customdata[4]}",
+            "Artist-ID: %{customdata[4]}",
         ])
     )
 

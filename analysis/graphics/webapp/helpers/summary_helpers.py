@@ -35,7 +35,7 @@ def get_top_songs(start_date: str = str(date(2010, 1, 1)), end_date: str = str(d
         df_combined = normalize_to_minutes(ndf.copy(deep=True))
     else:
         gr = ndf.groupby('Gespielt am').agg(
-            {'Song-ID': 'first', 'Song': 'first', 'Künstler': ', '.join, 'Künstler-ID': ', '.join,
+            {'Song-ID': 'first', 'Song': 'first', 'Artist': ', '.join, 'Artist-ID': ', '.join,
              'Album': 'first', 'Album-ID': 'first', 'Songlänge': 'first'})
 
         counted = gr.value_counts('Song-ID').rename({1: 'Song-ID', 2: 'Anzahl Streams'}).sort_index().reset_index()
@@ -49,8 +49,8 @@ def get_top_songs(start_date: str = str(date(2010, 1, 1)), end_date: str = str(d
         song_id = row['Song-ID']
         anz_streams = row['Anzahl Streams']
         song_name = row['Song']
-        artist_name = row['Künstler']
-        # artist_id = row['Künstler-ID']
+        artist_name = row['Artist']
+        # artist_id = row['Artist-ID']
         album_name = row['Album']
         # album_id = row['Album-ID']
         song_length = f'00:{row["Songlänge"]}'
@@ -86,10 +86,10 @@ def get_top_artists(start_date: str = str(date(2010, 1, 1)), end_date: str = str
     mask = date_mask(start_date, end_date)
     ndf = df.loc[mask]
 
-    gr = ndf.groupby(['Künstler', 'Künstler-ID'], as_index=False).size()
+    gr = ndf.groupby(['Artist', 'Artist-ID'], as_index=False).size()
     df_sorted = gr.sort_values(by=['size'], ascending=False)
-    df_sorted.rename({1: 'Künstler', 2: 'Künstler-ID', 3: 'Anzahl Streams'})
-    df_sorted.set_axis(['Künstler', 'Künstler-ID', 'Anzahl Streams'], axis=1, inplace=True)
+    df_sorted.rename({1: 'Artist', 2: 'Artist-ID', 3: 'Anzahl Streams'})
+    df_sorted.set_axis(['Artist', 'Artist-ID', 'Anzahl Streams'], axis=1, inplace=True)
 
     df_top_x = df_sorted.head(return_amount)
 
@@ -127,7 +127,7 @@ def get_top_albums(start_date: str = str(date(2010, 1, 1)), end_date: str = str(
     ndf = df.loc[mask]
 
     gr = ndf.groupby('Gespielt am').agg({'Album': 'first', 'Album-ID': 'first',
-                                        'Künstler': ', '.join, 'Künstler-ID': ', '.join,
+                                        'Artist': ', '.join, 'Artist-ID': ', '.join,
                                         })
     counted = gr.value_counts('Album-ID').rename({1: 'Album-ID', 2: 'Anzahl Streams'}).sort_index().reset_index()
     counted.set_axis(['Album-ID', 'Anzahl Streams'], axis=1, inplace=True)
@@ -169,7 +169,7 @@ def normalize_to_minutes(df: pd.DataFrame) -> pd.DataFrame:
     """
     ndf = df
     gr = ndf.groupby('Gespielt am').agg(
-        {'Song-ID': 'first', 'Song': 'first', 'Künstler': ', '.join, 'Künstler-ID': ', '.join, 'Songlänge': 'first',
+        {'Song-ID': 'first', 'Song': 'first', 'Artist': ', '.join, 'Artist-ID': ', '.join, 'Songlänge': 'first',
          'Album': 'first', 'Album-ID': 'first'})
 
     counted = gr.value_counts('Song-ID').rename({1: 'Song-ID', 2: 'Anzahl Streams'}).sort_index().reset_index()
