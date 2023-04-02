@@ -9,10 +9,12 @@ from analysis.graphics.webapp.helpers.df_filenames import *
 from analysis.graphics.webapp.helpers.time_functions import *
 from analysis.graphics.webapp.select_statements import *
 from analysis.graphics.webapp.helpers.summary_helpers import date_mask
+from analysis.graphics.webapp.df_files import dataframe_loader
 
 dash.register_page(__name__)
 
-df = pd.read_csv(fr'{df_common_path}\{fn_df_allrounder}.csv')
+# df = pd.read_csv(fr'{df_common_path}\{fn_df_allrounder}.csv')
+df = dataframe_loader.get_default_dataframe()
 
 graph = dcc.Graph(
     id='played-at-plot',

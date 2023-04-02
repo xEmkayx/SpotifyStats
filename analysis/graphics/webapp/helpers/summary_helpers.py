@@ -7,16 +7,19 @@ import spotipy
 from spotipy import SpotifyOAuth
 
 from analysis.graphics.webapp.helpers import summary_cards, time_functions
-from analysis.graphics.webapp.helpers.df_filenames import df_common_path, fn_df_allrounder
+# from analysis.graphics.webapp.helpers.df_filenames import df_common_path, fn_df_allrounder
 from private.auth import CLIENT_ID, REDIRECT_URI, CLIENT_SECRET
+from analysis.graphics.webapp.df_files import dataframe_loader
 
 spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=CLIENT_ID, client_secret=CLIENT_SECRET,
                                                     redirect_uri=REDIRECT_URI, scope=''))
 
-df = pd.read_csv(fr'{df_common_path}\{fn_df_allrounder}.csv')
+# df = pd.read_csv(fr'{df_common_path}\{fn_df_allrounder}.csv')
+# df = dataframe_loader.get_default_dataframe()
 
 
 def date_mask(start_date: str, end_date: str):
+    df = dataframe_loader.get_default_dataframe()
     df['Gespielt am'] = pd.to_datetime(df['Gespielt am'], format='%Y-%m-%dT%H:%M')
     mask = (df['Gespielt am'] >= start_date) & (df['Gespielt am'] <= end_date)
     return mask
@@ -24,6 +27,7 @@ def date_mask(start_date: str, end_date: str):
 
 def get_top_songs(start_date: str = str(date(2010, 1, 1)), end_date: str = str(date.today()), return_amount: int = 10,
                   sorted_by_mins: bool = False):
+    df = dataframe_loader.get_default_dataframe()
     mask = date_mask(start_date, end_date)
     ndf = df.loc[mask]
 
@@ -78,6 +82,7 @@ def get_song_image(song_id: str):
 
 def get_top_artists(start_date: str = str(date(2010, 1, 1)), end_date: str = str(date.today()), return_amount: int = 10,
                   sorted_by_mins: bool = False):
+    df = dataframe_loader.get_default_dataframe()
     mask = date_mask(start_date, end_date)
     ndf = df.loc[mask]
 
@@ -117,6 +122,7 @@ def get_artist_image(artist_id: str):
 
 def get_top_albums(start_date: str = str(date(2010, 1, 1)), end_date: str = str(date.today()), return_amount: int = 10,
                   sorted_by_mins: bool = False):
+    df = dataframe_loader.get_default_dataframe()
     mask = date_mask(start_date, end_date)
     ndf = df.loc[mask]
 

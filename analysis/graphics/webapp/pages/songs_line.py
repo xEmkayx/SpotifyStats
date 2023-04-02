@@ -5,10 +5,12 @@ from dash_bootstrap_templates import ThemeChangerAIO, template_from_url
 
 from analysis.graphics.webapp.helpers.df_filenames import *
 from analysis.graphics.webapp.select_statements import *
+from analysis.graphics.webapp.df_files import dataframe_loader
 
 dash.register_page(__name__)
 
-df = pd.read_csv(fr'{df_common_path}\{fn_df_allrounder}.csv')
+# df = pd.read_csv(fr'{df_common_path}\{fn_df_allrounder}.csv')
+df = dataframe_loader.get_default_dataframe()
 
 gr = df.groupby(['Song-ID', 'Song', 'Künstler', 'Künstler-ID', 'Album', 'Album-ID'], as_index=False).size()  # .to_frame()
 df_sorted = gr.sort_values(by=['size'], ascending=False)

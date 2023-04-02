@@ -9,6 +9,8 @@ from dash import Dash
 from dash import html, DiskcacheManager
 from dash_bootstrap_templates import ThemeChangerAIO
 # import diskcache
+from analysis.graphics.webapp.df_files import dataframe_loader
+import asyncio
 
 import analysis.graphics.webapp.helpers.setting_functions
 from pathlib import Path
@@ -201,4 +203,5 @@ def main(reload_df_on_start: bool = True):
 
 
 if __name__ == '__main__':
+    asyncio.run(dataframe_loader.init())
     threading.Thread(target=main(False)).start()
