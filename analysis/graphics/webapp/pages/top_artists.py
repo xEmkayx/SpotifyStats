@@ -24,12 +24,6 @@ datepicker = dcc.DatePickerRange(
     end_date=tomorrow,
     start_date=date(datetime.now().year, 1, 1)
 )
-"""
-gr = df.groupby(['Artist', 'Artist-ID'], as_index=False).size()
-df_sorted = gr.sort_values(by=['size'], ascending=False)
-df_sorted.rename({1:'Artist', 2:'Artist-ID', 3:'Stream Count'})
-df_sorted.set_axis(['Artist', 'Artist-ID', 'Stream Count'], axis=1, inplace=True)
-"""
 
 theme_change = ThemeChangerAIO(aio_id="theme")
 
