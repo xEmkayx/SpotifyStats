@@ -19,14 +19,14 @@ dash.register_page(__name__)
 onscreen_songs = []
 
 # TODO: MORGENS/ABENDS
-tommorow = date(datetime.now().year, datetime.now().month, datetime.now().day + 1)
+tomorrow = date(datetime.now().year, datetime.now().month, datetime.now().day + 1)
 
 datepicker = dcc.DatePickerRange(
     id='date-picker-summary',
     min_date_allowed=date(2010, 1, 1),
-    max_date_allowed=tommorow,  # date(2022, 12, 12),  #
+    max_date_allowed=tomorrow,  # date(2022, 12, 12),  #
     initial_visible_month=date.today(),  # date(2022, 11, 1),  #
-    end_date=tommorow,
+    end_date=tomorrow,
     start_date=date(datetime.now().year, 1, 1)
 )
 
