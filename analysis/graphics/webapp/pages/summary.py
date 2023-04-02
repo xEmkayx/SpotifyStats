@@ -9,9 +9,6 @@ from spotify_scripts import playlist_creator
 
 dash.register_page(__name__)
 
-# df_orig = pd.read_csv(fr'{df_common_path}\{fn_df_allrounder}.csv')
-# df = summary_helpers.normalize_to_minutes(df_orig).sort_values('Stream Count')
-
 onscreen_songs = []
 
 # TODO: MORGENS/ABENDS
@@ -63,28 +60,16 @@ def init_songs(start_date: str = str(date(datetime.now().year, 1, 1)),
     songs.append(ul_songs)
 
     sum_songs = html.Div(
-        id='div-summary-songs',
-        className='div-summary-songs',
-        children=songs
+        [dcc.Loading(
+            id='loading-summary-songs',
+            children=[html.Div(
+                id='div-summary-songs',
+                className='div-summary-songs',
+                children=songs
+            )]
+        )]
     )
     return sum_songs
-
-
-# summary_songs = sum_songs = html.Div(
-summary_songs = html.Div(
-    id='div-summary-songs',
-    className='div-summary-songs'
-)
-
-tab_songs = dbc.Tab(
-    [
-        dcc.Loading(
-            [summary_songs],
-            id='load-summary-songs'
-        )
-    ],
-    label='Songs'
-)
 
 
 ##############################
@@ -111,28 +96,17 @@ def init_artists(start_date: str = str(date(datetime.now().year, 1, 1)),
     ul_artists = html.Ul(className='ul-songs-summary', children=artists_wrapper)
     artists.append(ul_artists)
 
-    sum_artists = html.Div(
-        id='div-summary-artists',
-        className='div-summary-songs',
-        children=artists
-    )
-    return sum_artists
-
-
-# summary_artists = init_artists()
-summary_artists = html.Div(
-    id='div-summary-artists',
-    className='div-summary-songs'
-)
-tab_artists = dbc.Tab(
-    [
+    sum_artists = html.Div([
         dcc.Loading(
-            [summary_artists],
-            id='load-summary-artists'
-        )
-    ],
-    label='Artists'
-)
+            id='loading-summary-artists',
+            children=[
+                html.Div(
+                    id='div-summary-artists',
+                    className='div-summary-songs',
+                    children=artists
+                )])
+    ])
+    return sum_artists
 
 
 #############################
@@ -159,28 +133,19 @@ def init_albums(start_date: str = str(date(datetime.now().year, 1, 1)),
     ul_albums = html.Ul(className='ul-songs-summary', children=albums_wrapper)
     albums.append(ul_albums)
 
-    sum_albums = html.Div(
-        id='div-summary-albums',
-        className='div-summary-songs',
-        children=albums
-    )
+    sum_albums = html.Div([
+        dcc.Loading(
+            id='loading-summary-albums',
+            children=[
+                html.Div(
+                    id='div-summary-albums',
+                    className='div-summary-songs',
+                    children=albums
+                )],
+            type='default'
+        )])
     return sum_albums
 
-
-# summary_albums = init_albums()
-summary_albums = html.Div(
-    id='div-summary-albums',
-    className='div-summary-songs'
-)
-tab_albums = dbc.Tab(
-    [
-        dcc.Loading(
-            [summary_albums],
-            id='load-summary-albums'
-        )
-    ],
-    label='Albums'
-)
 
 button_7d = dbc.Button(
     'Letzte 7 Tage',
@@ -217,13 +182,15 @@ date_buttons = dbc.ButtonGroup(
 )
 
 tabs = dcc.Tabs(
-    [
-        tab_songs,
-        tab_artists,
-        tab_albums
+    children=[
+        dcc.Tab(label='Songs', value='tab-songs-summary'),
+        dcc.Tab(label='Artists', value='tab-artists-summary'),
+        dcc.Tab(label='Albums', value='tab-albums-summary'),
     ],
     parent_className='custom-tabs',
-    className='custom-tabs-container'
+    className='custom-tabs-container',
+    id='summary-tabs',
+    value='tab-songs-summary'
 )
 
 amount_tb = dbc.Input(
@@ -267,6 +234,10 @@ streamed_by_buttons = html.Div(
     className="radio-group",
 )
 
+content = html.Div(
+    id='summary-content-div'
+)
+
 layout = html.Div(children=[
     html.H1(children='Summary'),
     datepicker,
@@ -276,7 +247,8 @@ layout = html.Div(children=[
     html.Br(),
     streamed_by_buttons,
     playlist_button,
-    tabs
+    tabs,
+    content
 ])
 
 
@@ -325,24 +297,28 @@ def button_events_graph(b7d, bmonth, byear):
 # TODO: albums werden nicht richtig gefetcht
 # TODO: Linebreaks funktionieren nicht richtig
 @callback(
-    Output('div-summary-songs', 'children'),
-    Output('div-summary-artists', 'children'),
-    Output('div-summary-albums', 'children'),
+    Output('summary-content-div', 'children'),
 
     [Input('date-picker-summary', 'start_date'),
      Input('date-picker-summary', 'end_date'),
      Input('inp-amount', 'value'),
-     Input("summary-streamed-by-radios", "value")],
+     Input("summary-streamed-by-radios", "value"),
+     Input('summary-tabs', 'value')],
 )
-def update_tabs(start_date, end_date, amount, radio_values):
+def update_tabs(start_date, end_date, amount, radio_values, selected_tab):
     sorted_by_minutes = False
     if radio_values == 1:
         sorted_by_minutes = False
     else:
         sorted_by_minutes = True
 
-    songs = init_songs(start_date, end_date, amount, sorted_by_minutes)
-    artists = init_artists(start_date, end_date, amount)
-    albums = init_albums(start_date, end_date, amount)
+    match selected_tab:
+        case 'tab-artists-summary':
+            t = init_artists(start_date, end_date, amount)
+        case 'tab-albums-summary':
+            t = init_albums(start_date, end_date, amount)
+        case 'tab-songs-summary' | _:
+            t = init_songs(start_date, end_date, amount, sorted_by_minutes)
 
-    return songs, artists, albums
+    # return songs, artists, albums
+    return t
