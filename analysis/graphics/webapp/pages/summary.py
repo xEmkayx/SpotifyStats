@@ -70,7 +70,8 @@ def init_songs(start_date: str = str(date(datetime.now().year, 1, 1)),
     return sum_songs
 
 
-summary_songs = sum_songs = html.Div(
+# summary_songs = sum_songs = html.Div(
+summary_songs = html.Div(
     id='div-summary-songs',
     className='div-summary-songs'
 )
@@ -207,6 +208,7 @@ button_year = dbc.Button(
 
 date_buttons = dbc.ButtonGroup(
     id='btn-group-summary',
+    className='date-buttons',
     children=[
         button_7d,
         button_month,
@@ -228,15 +230,23 @@ amount_tb = dbc.Input(
     id='inp-amount',
     type='number',
     value=10,
-    className='inp-summary'
+    className='inp-summary',
+    style={
+        'width': '4%',
+        'margin-left': '5px',
+        'margin-right': '5px',
+        'display': 'inline-block',
+        # 'filter': 'contrast(200%)',
+    }
 )
 
 playlist_button = dbc.Button(
     'Create a Playlist from these Songs',
     id='button-playlist',
-    outline=True,
-    color='primary',
-    n_clicks=0
+    # outline=True,
+    color='success',
+    n_clicks=0,
+    className='create-playlist-button'
 )
 
 streamed_by_buttons = html.Div(
@@ -260,11 +270,12 @@ streamed_by_buttons = html.Div(
 layout = html.Div(children=[
     html.H1(children='Summary'),
     datepicker,
+    amount_tb,
     html.Br(),
     date_buttons,
-    amount_tb,
-    playlist_button,
+    html.Br(),
     streamed_by_buttons,
+    playlist_button,
     tabs
 ])
 

@@ -220,3 +220,4 @@ fabric.properties
 .idea!/private/connector_values.py
 !/requirements_latest.txt
 !/envv_310/
+!/private/auth.ini

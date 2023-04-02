@@ -2,9 +2,9 @@ import dash
 import plotly.express as px
 from dash import html, dcc, callback, Input, Output
 from dash_bootstrap_templates import ThemeChangerAIO, template_from_url
+import dash_bootstrap_components as dbc
 
 from analysis.graphics.webapp.helpers.consts import *
-from analysis.graphics.webapp.helpers.df_filenames import *
 from analysis.graphics.webapp.select_statements import *
 from analysis.graphics.webapp.df_files import dataframe_loader
 
@@ -28,6 +28,7 @@ graph = dcc.Graph(
     id='single-albums-bar'
 )
 
+"""
 rbSelectionMethod = dcc.RadioItems(
     id='radio-items-salbum',
     options=[
@@ -38,25 +39,57 @@ rbSelectionMethod = dcc.RadioItems(
     labelStyle={'display': 'block'},
     # className='radiobuttons'
 )
+"""
+
+rbSelectionMethod = html.Div(
+    [
+        dbc.RadioItems(
+            id="radio-items-salbum",
+            className="btn-group",
+            inputClassName="btn-check",
+            labelClassName="btn btn-outline-primary",
+            labelCheckedClassName="active",
+            options=[
+                {"label": "Album Name", "value": 1},
+                {"label": "Album ID", "value": 2},
+            ],
+            value=1,
+        )
+    ],
+    className="radio-group",
+)
+
+t_album_name = dbc.Input(type='text',
+                         id='inp-album-name',
+                         placeholder="Insert Album here...",
+                         # className='inp-summary',
+                         style={
+                             'width': '10%',
+                             'margin-left': '5px',
+                             'margin-right': '5px',
+                             'display': 'inline-block',
+                         }
+                         )
+
+t_limit = dbc.Input(type='number',
+                    id='inp-limit',
+                    value=20,
+                    # className='inp-summary',
+                    style={
+                        'width': '4%',
+                        'margin-left': '5px',
+                        'margin-right': '5px',
+                        'display': 'inline-block',
+                    }
+                    )
+
 
 layout = html.Div(children=[
     html.H1(children='Single Album Streams'),
-    html.Div(className='container-single',
-             children=[
-                 html.Div(
-                     className='container-radiobuttons',
-                     children=[
-                         rbSelectionMethod,
-                     ]
-                 ),
-                 html.Div(children=[
-                     dcc.Input(type='text', id='inp-album-name'),
-                 ]),
-                 html.Div(children=[
-                     dcc.Input(type='number', id='inp-limit', value=20),
-                 ]),
-             ],
-             ),
+    t_album_name,
+    t_limit,
+    html.Br(),
+    rbSelectionMethod,
     # dcc.Input(type='text', id='inp-album-name'),
     # dcc.Input(type='number', id='inp-limit', value=20),
     html.Br(),
@@ -65,7 +98,24 @@ layout = html.Div(children=[
         children=[graph],
     ),
 ])
-
+"""
+html.Div(className='container-single',
+             children=[
+                 html.Div(children=[
+                     dcc.Input(type='text', id='inp-album-name'),
+                 ]),
+                 html.Div(children=[
+                     dcc.Input(type='number', id='inp-limit', value=20),
+                 ]),
+             ],
+             ),
+    html.Div(
+        # className='container-radiobuttons',
+        children=[
+            rbSelectionMethod,
+        ]
+    ),                 
+"""
 
 @callback(
     Output('single-albums-bar', 'figure'),

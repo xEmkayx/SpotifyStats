@@ -7,6 +7,7 @@ from analysis.graphics.webapp.helpers.consts import *
 from analysis.graphics.webapp.helpers.df_filenames import *
 from analysis.graphics.webapp.select_statements import *
 from analysis.graphics.webapp.df_files import dataframe_loader
+import dash_bootstrap_components as dbc
 
 dash.register_page(__name__)
 
@@ -14,16 +15,17 @@ dash.register_page(__name__)
 # df = pd.read_csv(fr'{df_common_path}\{fn_df_allrounder}.csv')
 df = dataframe_loader.get_default_dataframe()
 
-gr = df.groupby('Played at').agg({'Song-ID':'first', 'Song':'first', 'Artist':', '.join, 'Artist-ID':', '.join,
-                                    'Album':'first', 'Album-ID':'first'})
+gr = df.groupby('Played at').agg({'Song-ID': 'first', 'Song': 'first', 'Artist': ', '.join, 'Artist-ID': ', '.join,
+                                  'Album': 'first', 'Album-ID': 'first'})
 
-counted = gr.value_counts('Song-ID').rename({1:'Song-ID', 2:'Stream Count'}).sort_index().reset_index()
+counted = gr.value_counts('Song-ID').rename({1: 'Song-ID', 2: 'Stream Count'}).sort_index().reset_index()
 counted.set_axis(['Song-ID', 'Stream Count'], axis=1, inplace=True)
 
 rest = gr.reset_index().drop('Played at', axis=1).drop_duplicates('Song-ID').sort_values('Song-ID')
 
 df_combined = pd.merge(counted, rest).sort_values('Stream Count', ascending=False)
 
+"""
 rbSelectionMethod = dcc.RadioItems(
     id='radio-items-sart',
     options=[
@@ -33,6 +35,48 @@ rbSelectionMethod = dcc.RadioItems(
     value='Artist Name',
     labelStyle={'display': 'block'}
 )
+"""
+
+rbSelectionMethod = html.Div(
+    [
+        dbc.RadioItems(
+            id="radio-items-sart",
+            className="btn-group",
+            inputClassName="btn-check",
+            labelClassName="btn btn-outline-primary",
+            labelCheckedClassName="active",
+            options=[
+                {"label": "Artist Name", "value": 1},
+                {"label": "Artist ID", "value": 2},
+            ],
+            value=1,
+        )
+    ],
+    className="radio-group",
+)
+
+t_artist_name = dbc.Input(type='text',
+                          id='inp-artist-name',
+                          placeholder="Insert Artist here...",
+                          style={
+                              'width': '10%',
+                              'margin-left': '5px',
+                              'margin-right': '5px',
+                              'display': 'inline-block',
+                          }
+                          )
+
+t_limit = dbc.Input(type='number',
+                    id='inp-limit',
+                    value=20,
+                    # className='inp-summary',
+                    style={
+                        'width': '4%',
+                        'margin-left': '5px',
+                        'margin-right': '5px',
+                        'display': 'inline-block',
+                    }
+                    )
 
 graph = dcc.Graph(
     id='single-artists-line'
@@ -40,29 +84,34 @@ graph = dcc.Graph(
 
 layout = html.Div(children=[
     html.H1(children='Single Artist Streams'),
-    html.Div(children=[
-            html.Div(
-                children=[
-                    rbSelectionMethod,
-                ]
-            ),
-            html.Div(children=[
-                dcc.Input(type='text', id='inp-artist-name'),
-            ]),
-            html.Div(children=[
-                dcc.Input(type='number', id='inp-limit', value=20),
-            ]),
-        ], style={
-            'padding': '20px',
-        }
-             ),
+    t_artist_name,
+    t_limit,
+    html.Br(),
+    rbSelectionMethod,
     html.Br(),
     dcc.Loading(
         id='load-single-artists',
         children=[graph],
     ),
 ])
-
+"""
+html.Div(children=[
+        html.Div(
+            children=[
+                rbSelectionMethod,
+            ]
+        ),
+        html.Div(children=[
+            dcc.Input(type='text', id='inp-artist-name'),
+        ]),
+        html.Div(children=[
+            dcc.Input(type='number', id='inp-limit', value=20),
+        ]),
+    ], style={
+        'padding': '20px',
+    }
+    ),
+"""
 
 @callback(
     Output('single-artists-line', 'figure'),

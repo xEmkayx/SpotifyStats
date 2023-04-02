@@ -2,6 +2,7 @@ import dash
 import plotly.express as px
 from dash import html, dcc, callback, Input, Output
 from dash_bootstrap_templates import ThemeChangerAIO, template_from_url
+import dash_bootstrap_components as dbc
 
 from analysis.graphics.webapp.helpers.consts import *
 from analysis.graphics.webapp.helpers.df_filenames import *
@@ -27,7 +28,7 @@ df_combined = pd.merge(counted, rest).sort_values('Stream Count', ascending=Fals
 graph = dcc.Graph(
     id='single-song-bc'
 )
-
+"""
 rbSelectionMethod = dcc.RadioItems(
     id='radio-items-ssong',
     options=[
@@ -37,10 +38,63 @@ rbSelectionMethod = dcc.RadioItems(
     value='Song Name',
     labelStyle={'display': 'block'}
 )
+"""
+rbSelectionMethod = html.Div(
+    [
+        dbc.RadioItems(
+            id="radio-items-ssong",
+            className="btn-group",
+            inputClassName="btn-check",
+            labelClassName="btn btn-outline-primary",
+            labelCheckedClassName="active",
+            options=[
+                {"label": "Song Name", "value": 1},
+                {"label": "Song ID", "value": 2},
+            ],
+            value=1,
+        )
+    ],
+    className="radio-group",
+)
+
+t_song_name = dbc.Input(type='text',
+                        id='inp-song-name',
+                        placeholder="Insert Song here...",
+                        style={
+                            'width': '10%',
+                            'margin-left': '5px',
+                            'margin-right': '5px',
+                            'display': 'inline-block',
+                        }
+                        )
+
+t_limit = dbc.Input(type='number',
+                    id='inp-limit',
+                    value=20,
+                    # className='inp-summary',
+                    style={
+                        'width': '4%',
+                        'margin-left': '5px',
+                        'margin-right': '5px',
+                        'display': 'inline-block',
+                    }
+                    )
 
 layout = html.Div(children=[
     html.H1(children='Single Song Streams'),
-    html.Div(children=[
+    t_song_name,
+    t_limit,
+    html.Br(),
+    rbSelectionMethod,
+    html.Br(),
+    dcc.Loading(
+        id='load-single-song',
+        children=[graph],
+    ),
+])
+
+"""
+html.Div(children=[
         html.Div(
             children=[
                 rbSelectionMethod,
@@ -56,12 +110,7 @@ layout = html.Div(children=[
         'padding': '20px',
     }
     ),
-    html.Br(),
-    dcc.Loading(
-        id='load-single-song',
-        children=[graph],
-    ),
-])
+"""
 
 
 @callback(

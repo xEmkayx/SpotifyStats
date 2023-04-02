@@ -229,7 +229,8 @@ body {
   margin-left: 5px;
   margin-right: 5px;
   */
-  margin: 5px;
+  margin-top: 5px;
+  display: inline-block;
 }
 
 .radio-group .form-check {
@@ -239,12 +240,14 @@ body {
 .radio-group .btn-group > .form-check:not(:last-child) > .btn {
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
+  display: inline-block;
 }
 
 .radio-group .btn-group > .form-check:not(:first-child) > .btn {
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
   margin-left: -1px;
+  display: inline-block;
 }
 
 .inp-summary{
@@ -252,4 +255,25 @@ body {
     margin-left: 5px;
     margin-right: 5px;
     display: inline-block;
+    /* filter: contrast(200%); */
+}
+
+.date-buttons{
+    margin-top: 5px;
+    margin-right: 5px;
+}
+
+.create-playlist-button{
+    margin-left: 10px;
+    margin-bottom: 8px;
+    display: inline-block;
+}
+
+.custom-tabs-container{
+    margin-top: 5px;
+    /*background: transparent; */
+}
+
+.custom-tabs{
+    background: transparent;
 }

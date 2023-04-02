@@ -155,6 +155,7 @@ layout = html.Div(children=[
     datepicker,
     html.Br(),
     buttons,
+    html.Br(),
     streamed_by_buttons,
     hoerzeit,
     hz_neu,
@@ -192,12 +193,12 @@ def update_graph_theme(theme, start_date, end_date, btn_7d, btn_m, btn_y, radio_
         hover_text = "<br>".join([
             "Song: %{customdata[0]}",
             "Stream Count: %{customdata[1]}",
-            "Song-ID: %{customdata[2]}",
             "Artist: %{customdata[3]}",
-            "Artist-ID: %{customdata[4]}",
             "Album: %{customdata[5]}",
-            "Album-ID: %{customdata[6]}",
             "Song Length: %{customdata[7]}",
+            "Song-ID: %{customdata[2]}",
+            "Artist-ID: %{customdata[4]}",
+            "Album-ID: %{customdata[6]}",
         ])
     else:
         sorted_by_minutes = True
@@ -207,10 +208,10 @@ def update_graph_theme(theme, start_date, end_date, btn_7d, btn_m, btn_y, radio_
             "Song: %{customdata[0]}",
             "Stream Count: %{customdata[1]}",
             "Streamed Mins: %{customdata[7]}",
-            "Song-ID: %{customdata[2]}",
             "Artist: %{customdata[3]}",
-            "Artist-ID: %{customdata[4]}",
             "Album: %{customdata[5]}",
+            "Song-ID: %{customdata[2]}",
+            "Artist-ID: %{customdata[4]}",
             "Album-ID: %{customdata[6]}",
         ])
     df_combined = summary_helpers.get_top_songs_df(start_date=start_date, end_date=end_date,
