@@ -25,8 +25,8 @@ def date_mask(start_date: str, end_date: str):
     return mask
 
 
-def get_top_songs(start_date: str = str(date(2010, 1, 1)), end_date: str = str(date.today()), return_amount: int = 10,
-                  sorted_by_mins: bool = False):
+def get_top_songs_df(start_date: str = str(date(2010, 1, 1)), end_date: str = str(date.today()),
+                     sorted_by_mins: bool = False):
     df = dataframe_loader.get_default_dataframe()
     mask = date_mask(start_date, end_date)
     ndf = df.loc[mask]
@@ -42,7 +42,44 @@ def get_top_songs(start_date: str = str(date(2010, 1, 1)), end_date: str = str(d
         counted.set_axis(['Song-ID', 'Stream Count'], axis=1, inplace=True)
         rest = gr.reset_index().drop('Played at', axis=1).drop_duplicates('Song-ID').sort_values('Song-ID')
         df_combined = pd.merge(counted, rest).sort_values('Stream Count', ascending=False)
-    df_top_x = df_combined.head(return_amount)
+    return df_combined
+
+
+def get_top_songs_cards(start_date: str = str(date(2010, 1, 1)), end_date: str = str(date.today()),
+                        return_amount: int = 10, sorted_by_mins: bool = False):
+    """
+
+    :param start_date:
+    :param end_date:
+    :param return_amount: how many rows shall be returned; 0 for all rows
+    :param sorted_by_mins:
+    :return:
+    """
+    """
+    df = dataframe_loader.get_default_dataframe()
+    mask = date_mask(start_date, end_date)
+    ndf = df.loc[mask]
+
+    if sorted_by_mins:
+        df_combined = normalize_to_minutes(ndf.copy(deep=True))
+    else:
+        gr = ndf.groupby('Played at').agg(
+            {'Song-ID': 'first', 'Song': 'first', 'Artist': ', '.join, 'Artist-ID': ', '.join,
+             'Album': 'first', 'Album-ID': 'first', 'Song Length': 'first'})
+
+        counted = gr.value_counts('Song-ID').rename({1: 'Song-ID', 2: 'Stream Count'}).sort_index().reset_index()
+        counted.set_axis(['Song-ID', 'Stream Count'], axis=1, inplace=True)
+        rest = gr.reset_index().drop('Played at', axis=1).drop_duplicates('Song-ID').sort_values('Song-ID')
+        df_combined = pd.merge(counted, rest).sort_values('Stream Count', ascending=False)
+
+    if return_amount != 0:
+        df_top_x = df_combined.head(return_amount)
+    else:
+        df_top_x = df_combined
+    """
+    df_top_x = get_top_songs_df(start_date=start_date, end_date=end_date, sorted_by_mins=sorted_by_mins)\
+        .head(return_amount)
+
     song_card_list: list[summary_cards.SongSummary] = []
 
     for index, row in df_top_x.iterrows():
@@ -187,6 +224,9 @@ def normalize_to_minutes(df: pd.DataFrame) -> pd.DataFrame:
 
     df_combined['Dauer Sekunden'] = pd.to_timedelta(df_combined['Song Length']).dt.total_seconds()
     df_combined['Streamed Mins'] = df_combined['Stream Count'] * (df_combined['Dauer Sekunden'] / 60)
+
+    # df_combined['Streamed Mins'] = df_combined['Streamed Mins'].apply(lambda x: '{:.2f}'.format(x))
+
     df_combined = df_combined.sort_values('Streamed Mins', ascending=False)
     return df_combined
 

@@ -9,7 +9,8 @@ from analysis.graphics.webapp.helpers.df_filenames import *
 # import datetime as dt
 from analysis.graphics.webapp.helpers.time_functions import *
 from analysis.graphics.webapp.select_statements import *
-from analysis.graphics.webapp.helpers.summary_helpers import date_mask, normalize_to_minutes
+# from analysis.graphics.webapp.helpers.summary_helpers import date_mask, normalize_to_minutes, get
+from analysis.graphics.webapp.helpers import summary_helpers
 from analysis.graphics.webapp.df_files import dataframe_loader
 
 dash.register_page(__name__)
@@ -22,14 +23,14 @@ graph = dcc.Graph(
 )
 
 # TODO: MORGENS/ABENDS
-tommorow = date(datetime.now().year, datetime.now().month, datetime.now().day + 1)
+tomorrow = date(datetime.now().year, datetime.now().month, datetime.now().day + 1)
 
 datepicker = dcc.DatePickerRange(
     id='stream-minutes-date-picker-minutes',
     min_date_allowed=date(2010, 1, 1),
-    max_date_allowed=tommorow,  # date(2022, 12, 12),  #
+    max_date_allowed=tomorrow,  # date(2022, 12, 12),  #
     initial_visible_month=date.today(),  # date(2022, 11, 1),  #
-    end_date=tommorow,
+    end_date=tomorrow,
     start_date=date(datetime.now().year, 1, 1)
 )
 
@@ -131,11 +132,30 @@ tabs = dcc.Tabs(
     className='custom-tabs-container',
 )
 
+streamed_by_buttons = html.Div(
+    [
+        dbc.RadioItems(
+            id="songs-line-streamed-by-radios",
+            className="btn-group",
+            inputClassName="btn-check",
+            labelClassName="btn btn-outline-primary",
+            labelCheckedClassName="active",
+            options=[
+                {"label": "Sort by total count of Streams", "value": 1},
+                {"label": "Sort by total streamed minutes", "value": 2},
+            ],
+            value=1,
+        )
+    ],
+    className="radio-group",
+)
+
 layout = html.Div(children=[
     html.H1(children='Top Song streams in range'),
     datepicker,
     html.Br(),
     buttons,
+    streamed_by_buttons,
     hoerzeit,
     hz_neu,
     tabs
@@ -149,20 +169,54 @@ layout = html.Div(children=[
     Output('hours-sm', 'children'),
     Output('sm-minutes', 'children'),
     Output('sm-seconds', 'children'),
+
     Input(ThemeChangerAIO.ids.radio("all-themes"), "value"),
     Input('stream-minutes-date-picker-minutes', 'start_date'),
     Input('stream-minutes-date-picker-minutes', 'end_date'),
     [  # Input('btn-group', 'submit'),
         Input("stream-minutes-button-7d-s-minutes", "n_clicks"),
         Input('stream-minutes-button-month-s-minutes', 'n_clicks'),
-        Input('stream-minutes-button-year-s-minutes', 'n_clicks')
+        Input('stream-minutes-button-year-s-minutes', 'n_clicks'),
+        Input("songs-line-streamed-by-radios", "value")
     ]
 )
-def update_graph_theme(theme, start_date, end_date, btn_7d, btn_m, btn_y):
+def update_graph_theme(theme, start_date, end_date, btn_7d, btn_m, btn_y, radio_values):
     btn_7d = btn_m = btn_y = 0
+    custom_data = ['Song', 'Stream Count', 'Song-ID', 'Artist', 'Artist-ID', 'Album', 'Album-ID']
 
-    # mask = (df['Played at'] > start_date) & (df['Played at'] <= end_date)
-    mask = date_mask(start_date, end_date)
+    sorted_by_minutes = False
+    if radio_values == 1:
+        sorted_by_minutes = False
+        custom_data.append('Song Length')
+        y_axis = 'Stream Count'
+        hover_text = "<br>".join([
+            "Song: %{customdata[0]}",
+            "Stream Count: %{customdata[1]}",
+            "Song-ID: %{customdata[2]}",
+            "Artist: %{customdata[3]}",
+            "Artist-ID: %{customdata[4]}",
+            "Album: %{customdata[5]}",
+            "Album-ID: %{customdata[6]}",
+            "Song Length: %{customdata[7]}",
+        ])
+    else:
+        sorted_by_minutes = True
+        custom_data.append('Streamed Mins')
+        y_axis = 'Streamed Mins'
+        hover_text = "<br>".join([
+            "Song: %{customdata[0]}",
+            "Stream Count: %{customdata[1]}",
+            "Streamed Mins: %{customdata[7]}",
+            "Song-ID: %{customdata[2]}",
+            "Artist: %{customdata[3]}",
+            "Artist-ID: %{customdata[4]}",
+            "Album: %{customdata[5]}",
+            "Album-ID: %{customdata[6]}",
+        ])
+    df_combined = summary_helpers.get_top_songs_df(start_date=start_date, end_date=end_date,
+                                                   sorted_by_mins=sorted_by_minutes)
+
+    mask = summary_helpers.date_mask(start_date, end_date)
     ndf = df.loc[mask]
 
     stream_sum = pd.to_timedelta('00:' + ndf["Song Length"]).sum()
@@ -173,26 +227,12 @@ def update_graph_theme(theme, start_date, end_date, btn_7d, btn_m, btn_y):
     minutes = strfdelta(stream_sum, "{minutes}")
     seconds = strfdelta(stream_sum, "{seconds}")
 
-    df_combined = normalize_to_minutes(ndf)
-
-    fig = px.line(df_combined.head(n=100), x="Song", y="Streamed Mins", template=template_from_url(theme),
+    fig = px.line(df_combined.head(n=100), x="Song", y=y_axis, template=template_from_url(theme),
                   markers=True, height=1000,
                   # title=f'Streamzahlen aller Artist"',
-                  custom_data=['Song', 'Stream Count', 'Song-ID', 'Artist', 'Artist-ID', 'Album', 'Album-ID',
-                               'Streamed Mins'])
+                  custom_data=custom_data)
 
-    fig.update_traces(
-        hovertemplate="<br>".join([
-            "Song: %{customdata[0]}",
-            "Stream Count: %{customdata[1]}",
-            "Streamed Mins: %{customdata[7]}",
-            "Song-ID: %{customdata[2]}",
-            "Artist: %{customdata[3]}",
-            "Artist-ID: %{customdata[4]}",
-            "Album: %{customdata[5]}",
-            "Album-ID: %{customdata[6]}",
-        ])
-    )
+    fig.update_traces(hovertemplate=hover_text)
     return fig, sum_text, days, hours, minutes, seconds
 
 
@@ -234,23 +274,17 @@ def button_events_graph(b7d, bmonth, byear):
     # Output('sm-seconds', 'children'),
     Input('stream-minutes-date-picker-minutes', 'start_date'),
     Input('stream-minutes-date-picker-minutes', 'end_date'),
+    Input("songs-line-streamed-by-radios", "value"),
 )
-def update_table(start_date, end_date):
-    # mask = (df['Played at'] > start_date) & (df['Played at'] <= end_date)
-    mask = date_mask(start_date, end_date)
-    ndf = df.loc[mask]
+def update_table(start_date, end_date, radio_values):
+    sorted_by_minutes = False
+    if radio_values == 1:
+        sorted_by_minutes = False
+    else:
+        sorted_by_minutes = True
 
-    df_combined = normalize_to_minutes(ndf)
-    """
-    gr = ndf.groupby('Played at').agg(
-        {'Song-ID': 'first', 'Song': 'first', 'Artist': ', '.join, 'Artist-ID': ', '.join,
-         'Album': 'first', 'Album-ID': 'first'})
-
-    counted = gr.value_counts('Song-ID').rename({1: 'Song-ID', 2: 'Stream Count'}).sort_index().reset_index()
-    counted.set_axis(['Song-ID', 'Stream Count'], axis=1, inplace=True)
-    rest = gr.reset_index().drop('Played at', axis=1).drop_duplicates('Song-ID').sort_values('Song-ID')
-    df_combined = pd.merge(counted, rest).sort_values('Stream Count', ascending=False)
-    """
+    df_combined = summary_helpers.get_top_songs_df(start_date=start_date, end_date=end_date,
+                                                   sorted_by_mins=sorted_by_minutes)
 
     tab = dbc.Table.from_dataframe(df_combined.head(n=1000), striped=True, bordered=True, hover=True)
     return tab

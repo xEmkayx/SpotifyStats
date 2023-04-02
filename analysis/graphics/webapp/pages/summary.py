@@ -36,8 +36,8 @@ def init_songs(start_date: str = str(date(datetime.now().year, 1, 1)),
     onscreen_songs.clear()
 
     for idx, i in enumerate(
-            summary_helpers.get_top_songs(start_date=start_date, end_date=end_date, return_amount=amount,
-                                          sorted_by_mins=sorted_by_minutes)):
+            summary_helpers.get_top_songs_cards(start_date=start_date, end_date=end_date, return_amount=amount,
+                                                sorted_by_mins=sorted_by_minutes)):
         id = i.song_id
         onscreen_songs.append(id)
 
@@ -242,7 +242,7 @@ playlist_button = dbc.Button(
 streamed_by_buttons = html.Div(
     [
         dbc.RadioItems(
-            id="streamed-by-radios",
+            id="summary-streamed-by-radios",
             className="btn-group",
             inputClassName="btn-check",
             labelClassName="btn btn-outline-primary",
@@ -321,7 +321,7 @@ def button_events_graph(b7d, bmonth, byear):
     [Input('date-picker-summary', 'start_date'),
      Input('date-picker-summary', 'end_date'),
      Input('inp-amount', 'value'),
-     Input("streamed-by-radios", "value")],
+     Input("summary-streamed-by-radios", "value")],
 )
 def update_tabs(start_date, end_date, amount, radio_values):
     sorted_by_minutes = False
