@@ -79,7 +79,7 @@ def init_artists(start_date: str = str(date(datetime.now().year, 1, 1)),
                  amount: int = 10):
     artists = []
     artists_wrapper = []
-    for i in summary_helpers.get_top_artists(start_date=start_date, end_date=end_date, return_amount=amount):
+    for i in summary_helpers.get_top_artists_cards(start_date=start_date, end_date=end_date, return_amount=amount):
         wr = html.Li(
             children=[
                 html.Img(src=i.artist_image, alt='https://vectorified.com/images/no-profile-picture-icon-21.jpg'),
@@ -117,7 +117,7 @@ def init_albums(start_date: str = str(date(datetime.now().year, 1, 1)),
                 amount: int = 10):
     albums = []
     albums_wrapper = []
-    for i in summary_helpers.get_top_albums(start_date=start_date, end_date=end_date, return_amount=amount):
+    for i in summary_helpers.get_top_album_cards(start_date=start_date, end_date=end_date, return_amount=amount):
         text = f'{i.album_artist} - {i.album_name}'
         wr = html.Li(
             children=[

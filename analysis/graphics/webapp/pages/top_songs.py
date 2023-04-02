@@ -1,17 +1,14 @@
 import dash
 import dash_bootstrap_components as dbc
-import pandas as pd
 import plotly.express as px
 from dash import html, dcc, callback, Input, Output
 from dash_bootstrap_templates import ThemeChangerAIO, template_from_url
 
-from analysis.graphics.webapp.helpers.df_filenames import *
-# import datetime as dt
 from analysis.graphics.webapp.helpers.time_functions import *
 from analysis.graphics.webapp.select_statements import *
-# from analysis.graphics.webapp.helpers.summary_helpers import date_mask, normalize_to_minutes, get
 from analysis.graphics.webapp.helpers import summary_helpers
 from analysis.graphics.webapp.df_files import dataframe_loader
+from analysis.graphics.webapp.helpers.consts import *
 
 dash.register_page(__name__)
 
@@ -150,9 +147,24 @@ streamed_by_buttons = html.Div(
     className="radio-group",
 )
 
+amount_tb = dbc.Input(
+    id='inp-amount-top-songs',
+    type='number',
+    value=10,
+    className='inp-summary',
+    style={
+        'width': '4%',
+        'margin-left': '5px',
+        'margin-right': '5px',
+        'display': 'inline-block',
+        # 'filter': 'contrast(200%)',
+    }
+)
+
 layout = html.Div(children=[
     html.H1(children='Top Song streams in range'),
     datepicker,
+    amount_tb,
     html.Br(),
     buttons,
     html.Br(),
@@ -179,9 +191,10 @@ layout = html.Div(children=[
         Input('stream-minutes-button-month-s-minutes', 'n_clicks'),
         Input('stream-minutes-button-year-s-minutes', 'n_clicks'),
         Input("songs-line-streamed-by-radios", "value")
-    ]
+    ],
+    Input('inp-amount-top-songs', 'value')
 )
-def update_graph_theme(theme, start_date, end_date, btn_7d, btn_m, btn_y, radio_values):
+def update_graph_theme(theme, start_date, end_date, btn_7d, btn_m, btn_y, radio_values, amount):
     btn_7d = btn_m = btn_y = 0
     custom_data = ['Song', 'Stream Count', 'Song-ID', 'Artist', 'Artist-ID', 'Album', 'Album-ID']
 
@@ -228,10 +241,19 @@ def update_graph_theme(theme, start_date, end_date, btn_7d, btn_m, btn_y, radio_
     minutes = strfdelta(stream_sum, "{minutes}")
     seconds = strfdelta(stream_sum, "{seconds}")
 
-    fig = px.line(df_combined.head(n=100), x="Song", y=y_axis, template=template_from_url(theme),
+    """
+    fig = px.line(df_combined.head(n=amount), x="Song", y=y_axis,
+                  template=template_from_url(theme),
                   markers=True, height=1000,
                   # title=f'Streamzahlen aller Artist"',
                   custom_data=custom_data)
+    """
+
+    fig = px.bar(df_combined.head(amount), x='Song', y=y_axis, height=850,
+                 title='Top Song Streams',
+                 color='Stream Count', color_continuous_scale=default_color_scale,
+                 custom_data=custom_data,
+                 template=template_from_url(theme))
 
     fig.update_traces(hovertemplate=hover_text)
     return fig, sum_text, days, hours, minutes, seconds

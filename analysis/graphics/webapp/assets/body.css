@@ -271,7 +271,10 @@ body {
 
 .custom-tabs-container{
     margin-top: 5px;
-    /*background: transparent; */
+    background: transparent;
+    display: flex;
+    justify-content: center; /* center horizontally */
+    align-items: center; /* center vertically */
 }
 
 .custom-tabs{

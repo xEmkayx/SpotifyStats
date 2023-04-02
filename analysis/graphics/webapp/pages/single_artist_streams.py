@@ -25,18 +25,6 @@ rest = gr.reset_index().drop('Played at', axis=1).drop_duplicates('Song-ID').sor
 
 df_combined = pd.merge(counted, rest).sort_values('Stream Count', ascending=False)
 
-"""
-rbSelectionMethod = dcc.RadioItems(
-    id='radio-items-sart',
-    options=[
-        {'label': 'Artist Name', 'value': 1},
-        {'label': 'Artist ID', 'value': 2}
-    ],
-    value='Artist Name',
-    labelStyle={'display': 'block'}
-)
-"""
-
 rbSelectionMethod = html.Div(
     [
         dbc.RadioItems(
@@ -94,24 +82,7 @@ layout = html.Div(children=[
         children=[graph],
     ),
 ])
-"""
-html.Div(children=[
-        html.Div(
-            children=[
-                rbSelectionMethod,
-            ]
-        ),
-        html.Div(children=[
-            dcc.Input(type='text', id='inp-artist-name'),
-        ]),
-        html.Div(children=[
-            dcc.Input(type='number', id='inp-limit', value=20),
-        ]),
-    ], style={
-        'padding': '20px',
-    }
-    ),
-"""
+
 
 @callback(
     Output('single-artists-line', 'figure'),
@@ -135,8 +106,10 @@ def update_graph(art_name, limit, rbvalue, theme):
                                     text_auto='.2s', orientation='h',
                                     color='Stream Count', color_continuous_scale=default_color_scale,
                                     template=template_from_url(theme),
+                                    text='Song',
                                     custom_data=['Artist', 'Song', 'Stream Count'])
-    single_artist_barchart.update_traces(textfont_size=12, textangle=0, textposition="outside", cliponaxis=False)
+    # single_artist_barchart.update_traces(textfont_size=12, textangle=0, textposition="outside", cliponaxis=False)
+    single_artist_barchart.update_traces(textfont_size=12, textposition="inside")
     single_artist_barchart.update_layout(yaxis=dict(autorange="reversed"))
 
     single_artist_barchart.update_layout(
