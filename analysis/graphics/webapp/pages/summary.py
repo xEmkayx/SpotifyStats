@@ -10,7 +10,7 @@ from spotify_scripts import playlist_creator
 dash.register_page(__name__)
 
 # df_orig = pd.read_csv(fr'{df_common_path}\{fn_df_allrounder}.csv')
-# df = summary_helpers.normalize_to_minutes(df_orig).sort_values('Anzahl Streams')
+# df = summary_helpers.normalize_to_minutes(df_orig).sort_values('Stream Count')
 
 onscreen_songs = []
 

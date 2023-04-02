@@ -5,9 +5,9 @@ from dash import html
 dash.register_page(__name__)
 
 # df = pd.read_csv(fr'{df_common_path}\{fn_df_anz_top_album_streams}.csv')
-# sunb_top_albums_plot = px.sunburst(df.head(n=1000), path=['Album', 'Song'], values='Anzahl Streams',
+# sunb_top_albums_plot = px.sunburst(df.head(n=1000), path=['Album', 'Song'], values='Stream Count',
 #                                    title='Anzahl der Album-Streams nach Alben',
-#                                    color='Anzahl Streams', color_continuous_scale='tealrose', template='seaborn')
+#                                    color='Stream Count', color_continuous_scale='tealrose', template='seaborn')
 #
 # sunb_top_albums_plot.update_layout(
 #     plot_bgcolor=colors['background'],

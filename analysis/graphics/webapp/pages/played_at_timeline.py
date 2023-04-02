@@ -175,10 +175,10 @@ layout = html.Div(children=[
 def update_graph_theme(theme, start_date, end_date, btn_7d, btn_m, btn_y):
     btn_7d = btn_m = btn_y = 0
 
-    mask = (df['Gespielt am'] > start_date) & (df['Gespielt am'] <= end_date)
+    mask = (df['Played at'] > start_date) & (df['Played at'] <= end_date)
     ndf = df.loc[mask]
 
-    sum = pd.to_timedelta('00:' + ndf["Songlänge"]).sum()
+    sum = pd.to_timedelta('00:' + ndf["Song Length"]).sum()
     sum_conv = strfdelta(sum, "{days} Tage, {hours} Stunden, {minutes} Minuten und {seconds} Sekunden")
     sum_text = f'(Ungefähre) Gesamte Hörzeit: {sum_conv}'
     days = strfdelta(sum, "{days}")
@@ -186,24 +186,24 @@ def update_graph_theme(theme, start_date, end_date, btn_7d, btn_m, btn_y):
     minutes = strfdelta(sum, "{minutes}")
     seconds = strfdelta(sum, "{seconds}")
 
-    gr = ndf.groupby('Gespielt am').agg(
+    gr = ndf.groupby('Played at').agg(
         {'Song-ID': 'first', 'Song': 'first', 'Artist': ', '.join, 'Artist-ID': ', '.join,
          'Album': 'first', 'Album-ID': 'first'})
 
-    counted = gr.value_counts('Song-ID').rename({1: 'Song-ID', 2: 'Anzahl Streams'}).sort_index().reset_index()
-    counted.set_axis(['Song-ID', 'Anzahl Streams'], axis=1, inplace=True)
-    rest = gr.reset_index().drop('Gespielt am', axis=1).drop_duplicates('Song-ID').sort_values('Song-ID')
-    df_combined = pd.merge(counted, rest).sort_values('Anzahl Streams', ascending=False)
+    counted = gr.value_counts('Song-ID').rename({1: 'Song-ID', 2: 'Stream Count'}).sort_index().reset_index()
+    counted.set_axis(['Song-ID', 'Stream Count'], axis=1, inplace=True)
+    rest = gr.reset_index().drop('Played at', axis=1).drop_duplicates('Song-ID').sort_values('Song-ID')
+    df_combined = pd.merge(counted, rest).sort_values('Stream Count', ascending=False)
 
-    fig = px.line(df_combined.head(n=100), x="Song", y="Anzahl Streams", template=template_from_url(theme),
+    fig = px.line(df_combined.head(n=100), x="Song", y="Stream Count", template=template_from_url(theme),
                   markers=True, height=1000,
                   # title=f'Streamzahlen aller Artist"',
-                  custom_data=['Song', 'Anzahl Streams', 'Song-ID', 'Artist', 'Artist-ID', 'Album', 'Album-ID'])
+                  custom_data=['Song', 'Stream Count', 'Song-ID', 'Artist', 'Artist-ID', 'Album', 'Album-ID'])
 
     fig.update_traces(
         hovertemplate="<br>".join([
             "Song: %{customdata[0]}",
-            "Anzahl Streams: %{customdata[1]}",
+            "Stream Count: %{customdata[1]}",
             "Song-ID: %{customdata[2]}",
             "Artist: %{customdata[3]}",
             "Artist-ID: %{customdata[4]}",
@@ -254,17 +254,17 @@ def button_events_graph(b7d, bmonth, byear):
     Input('date-picker-range', 'end_date'),
 )
 def update_table(start_date, end_date):
-    mask = (df['Gespielt am'] > start_date) & (df['Gespielt am'] <= end_date)
+    mask = (df['Played at'] > start_date) & (df['Played at'] <= end_date)
     ndf = df.loc[mask]
 
-    gr = ndf.groupby('Gespielt am').agg(
+    gr = ndf.groupby('Played at').agg(
         {'Song-ID': 'first', 'Song': 'first', 'Artist': ', '.join, 'Artist-ID': ', '.join,
          'Album': 'first', 'Album-ID': 'first'})
 
-    counted = gr.value_counts('Song-ID').rename({1: 'Song-ID', 2: 'Anzahl Streams'}).sort_index().reset_index()
-    counted.set_axis(['Song-ID', 'Anzahl Streams'], axis=1, inplace=True)
-    rest = gr.reset_index().drop('Gespielt am', axis=1).drop_duplicates('Song-ID').sort_values('Song-ID')
-    df_combined = pd.merge(counted, rest).sort_values('Anzahl Streams', ascending=False)
+    counted = gr.value_counts('Song-ID').rename({1: 'Song-ID', 2: 'Stream Count'}).sort_index().reset_index()
+    counted.set_axis(['Song-ID', 'Stream Count'], axis=1, inplace=True)
+    rest = gr.reset_index().drop('Played at', axis=1).drop_duplicates('Song-ID').sort_values('Song-ID')
+    df_combined = pd.merge(counted, rest).sort_values('Stream Count', ascending=False)
 
     tab = dbc.Table.from_dataframe(df_combined.head(n=1000), striped=True, bordered=True, hover=True)
     return tab

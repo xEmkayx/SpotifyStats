@@ -20,8 +20,8 @@ spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=CLIENT_ID, client_
 
 def date_mask(start_date: str, end_date: str):
     df = dataframe_loader.get_default_dataframe()
-    df['Gespielt am'] = pd.to_datetime(df['Gespielt am'], format='%Y-%m-%dT%H:%M')
-    mask = (df['Gespielt am'] >= start_date) & (df['Gespielt am'] <= end_date)
+    df['Played at'] = pd.to_datetime(df['Played at'], format='%Y-%m-%dT%H:%M')
+    mask = (df['Played at'] >= start_date) & (df['Played at'] <= end_date)
     return mask
 
 
@@ -34,26 +34,26 @@ def get_top_songs(start_date: str = str(date(2010, 1, 1)), end_date: str = str(d
     if sorted_by_mins:
         df_combined = normalize_to_minutes(ndf.copy(deep=True))
     else:
-        gr = ndf.groupby('Gespielt am').agg(
+        gr = ndf.groupby('Played at').agg(
             {'Song-ID': 'first', 'Song': 'first', 'Artist': ', '.join, 'Artist-ID': ', '.join,
-             'Album': 'first', 'Album-ID': 'first', 'Songlänge': 'first'})
+             'Album': 'first', 'Album-ID': 'first', 'Song Length': 'first'})
 
-        counted = gr.value_counts('Song-ID').rename({1: 'Song-ID', 2: 'Anzahl Streams'}).sort_index().reset_index()
-        counted.set_axis(['Song-ID', 'Anzahl Streams'], axis=1, inplace=True)
-        rest = gr.reset_index().drop('Gespielt am', axis=1).drop_duplicates('Song-ID').sort_values('Song-ID')
-        df_combined = pd.merge(counted, rest).sort_values('Anzahl Streams', ascending=False)
+        counted = gr.value_counts('Song-ID').rename({1: 'Song-ID', 2: 'Stream Count'}).sort_index().reset_index()
+        counted.set_axis(['Song-ID', 'Stream Count'], axis=1, inplace=True)
+        rest = gr.reset_index().drop('Played at', axis=1).drop_duplicates('Song-ID').sort_values('Song-ID')
+        df_combined = pd.merge(counted, rest).sort_values('Stream Count', ascending=False)
     df_top_x = df_combined.head(return_amount)
     song_card_list: list[summary_cards.SongSummary] = []
 
     for index, row in df_top_x.iterrows():
         song_id = row['Song-ID']
-        anz_streams = row['Anzahl Streams']
+        anz_streams = row['Stream Count']
         song_name = row['Song']
         artist_name = row['Artist']
         # artist_id = row['Artist-ID']
         album_name = row['Album']
         # album_id = row['Album-ID']
-        song_length = f'00:{row["Songlänge"]}'
+        song_length = f'00:{row["Song Length"]}'
         song_image = get_song_image(song_id)
 
         if len(df_top_x.columns) > 8:
@@ -88,8 +88,8 @@ def get_top_artists(start_date: str = str(date(2010, 1, 1)), end_date: str = str
 
     gr = ndf.groupby(['Artist', 'Artist-ID'], as_index=False).size()
     df_sorted = gr.sort_values(by=['size'], ascending=False)
-    df_sorted.rename({1: 'Artist', 2: 'Artist-ID', 3: 'Anzahl Streams'})
-    df_sorted.set_axis(['Artist', 'Artist-ID', 'Anzahl Streams'], axis=1, inplace=True)
+    df_sorted.rename({1: 'Artist', 2: 'Artist-ID', 3: 'Stream Count'})
+    df_sorted.set_axis(['Artist', 'Artist-ID', 'Stream Count'], axis=1, inplace=True)
 
     df_top_x = df_sorted.head(return_amount)
 
@@ -126,13 +126,13 @@ def get_top_albums(start_date: str = str(date(2010, 1, 1)), end_date: str = str(
     mask = date_mask(start_date, end_date)
     ndf = df.loc[mask]
 
-    gr = ndf.groupby('Gespielt am').agg({'Album': 'first', 'Album-ID': 'first',
+    gr = ndf.groupby('Played at').agg({'Album': 'first', 'Album-ID': 'first',
                                         'Artist': ', '.join, 'Artist-ID': ', '.join,
                                         })
-    counted = gr.value_counts('Album-ID').rename({1: 'Album-ID', 2: 'Anzahl Streams'}).sort_index().reset_index()
-    counted.set_axis(['Album-ID', 'Anzahl Streams'], axis=1, inplace=True)
-    rest = gr.reset_index().drop('Gespielt am', axis=1).drop_duplicates('Album-ID').sort_values('Album-ID')
-    df_combined = pd.merge(counted, rest).sort_values('Anzahl Streams', ascending=False)
+    counted = gr.value_counts('Album-ID').rename({1: 'Album-ID', 2: 'Stream Count'}).sort_index().reset_index()
+    counted.set_axis(['Album-ID', 'Stream Count'], axis=1, inplace=True)
+    rest = gr.reset_index().drop('Played at', axis=1).drop_duplicates('Album-ID').sort_values('Album-ID')
+    df_combined = pd.merge(counted, rest).sort_values('Stream Count', ascending=False)
 
     df_top_x = df_combined.head(return_amount)
 
@@ -168,25 +168,25 @@ def normalize_to_minutes(df: pd.DataFrame) -> pd.DataFrame:
     :return: normalized DataFrame
     """
     ndf = df
-    gr = ndf.groupby('Gespielt am').agg(
-        {'Song-ID': 'first', 'Song': 'first', 'Artist': ', '.join, 'Artist-ID': ', '.join, 'Songlänge': 'first',
+    gr = ndf.groupby('Played at').agg(
+        {'Song-ID': 'first', 'Song': 'first', 'Artist': ', '.join, 'Artist-ID': ', '.join, 'Song Length': 'first',
          'Album': 'first', 'Album-ID': 'first'})
 
-    counted = gr.value_counts('Song-ID').rename({1: 'Song-ID', 2: 'Anzahl Streams'}).sort_index().reset_index()
+    counted = gr.value_counts('Song-ID').rename({1: 'Song-ID', 2: 'Stream Count'}).sort_index().reset_index()
 
-    gr['Songlänge'] = pd.to_datetime(gr['Songlänge'], format='%H:%M:%S', errors='coerce').fillna(
-        pd.to_datetime(gr['Songlänge'],
+    gr['Song Length'] = pd.to_datetime(gr['Song Length'], format='%H:%M:%S', errors='coerce').fillna(
+        pd.to_datetime(gr['Song Length'],
                        format='%M:%S'))
 
-    gr['Songlänge'] = gr['Songlänge'].dt.time
-    gr['Songlänge'] = gr['Songlänge'].astype(str)
+    gr['Song Length'] = gr['Song Length'].dt.time
+    gr['Song Length'] = gr['Song Length'].astype(str)
 
-    counted.set_axis(['Song-ID', 'Anzahl Streams'], axis=1, inplace=True)
-    rest = gr.reset_index().drop('Gespielt am', axis=1).drop_duplicates('Song-ID').sort_values('Song-ID')
-    df_combined = pd.merge(counted, rest).sort_values('Anzahl Streams', ascending=False)
+    counted.set_axis(['Song-ID', 'Stream Count'], axis=1, inplace=True)
+    rest = gr.reset_index().drop('Played at', axis=1).drop_duplicates('Song-ID').sort_values('Song-ID')
+    df_combined = pd.merge(counted, rest).sort_values('Stream Count', ascending=False)
 
-    df_combined['Dauer Sekunden'] = pd.to_timedelta(df_combined['Songlänge']).dt.total_seconds()
-    df_combined['Streamed Mins'] = df_combined['Anzahl Streams'] * (df_combined['Dauer Sekunden'] / 60)
+    df_combined['Dauer Sekunden'] = pd.to_timedelta(df_combined['Song Length']).dt.total_seconds()
+    df_combined['Streamed Mins'] = df_combined['Stream Count'] * (df_combined['Dauer Sekunden'] / 60)
     df_combined = df_combined.sort_values('Streamed Mins', ascending=False)
     return df_combined
 

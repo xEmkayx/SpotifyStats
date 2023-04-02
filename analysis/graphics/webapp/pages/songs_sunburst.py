@@ -15,15 +15,15 @@ dash.register_page(__name__)
 # df = pd.read_csv(fr'{df_common_path}\{fn_df_allrounder}.csv')
 df = dataframe_loader.get_default_dataframe()
 
-gr = df.groupby('Gespielt am').agg({'Song-ID':'first', 'Song':'first', 'Artist':', '.join, 'Artist-ID':', '.join,
+gr = df.groupby('Played at').agg({'Song-ID':'first', 'Song':'first', 'Artist':', '.join, 'Artist-ID':', '.join,
                                     'Album':'first', 'Album-ID':'first'})
 
-counted = gr.value_counts('Song-ID').rename({1:'Song-ID', 2:'Anzahl Streams'}).sort_index().reset_index()
-counted.set_axis(['Song-ID', 'Anzahl Streams'], axis=1, inplace=True)
+counted = gr.value_counts('Song-ID').rename({1:'Song-ID', 2:'Stream Count'}).sort_index().reset_index()
+counted.set_axis(['Song-ID', 'Stream Count'], axis=1, inplace=True)
 
-rest = gr.reset_index().drop('Gespielt am', axis=1).drop_duplicates('Song-ID').sort_values('Song-ID')
+rest = gr.reset_index().drop('Played at', axis=1).drop_duplicates('Song-ID').sort_values('Song-ID')
 
-df_combined = pd.merge(counted, rest).sort_values('Anzahl Streams', ascending=False)
+df_combined = pd.merge(counted, rest).sort_values('Stream Count', ascending=False)
 
 graph = dcc.Graph(
     id='song-streams-sunburst'
@@ -44,12 +44,12 @@ layout = html.Div(children=[
     Input(ThemeChangerAIO.ids.radio("all-themes"), "value"),
 )
 def update_graph_theme(theme):
-    song_streams_plot = px.sunburst(df_combined.head(n=1000), path=['Artist', 'Song'], values='Anzahl Streams',
+    song_streams_plot = px.sunburst(df_combined.head(n=1000), path=['Artist', 'Song'], values='Stream Count',
                                     title='Anzahl aller Song Streams',
-                                    color='Anzahl Streams', color_continuous_scale=default_color_scale,
+                                    color='Stream Count', color_continuous_scale=default_color_scale,
                                     template=template_from_url(theme),
                                     height=1000,
-                                    custom_data=['Song', 'Anzahl Streams', 'Song-ID', 'Artist', 'Artist-ID',
+                                    custom_data=['Song', 'Stream Count', 'Song-ID', 'Artist', 'Artist-ID',
                                                  'Album', 'Album-ID'])
 
     # song_streams_plot.update_layout(
@@ -61,7 +61,7 @@ def update_graph_theme(theme):
     song_streams_plot.update_traces(
         hovertemplate="<br>".join([
             "Song: %{customdata[0]}",
-            "Anzahl Streams: %{customdata[1]}",
+            "Stream Count: %{customdata[1]}",
             "Song-ID: %{customdata[2]}",
             "Artist: %{customdata[3]}",
             "Artist-ID(s): %{customdata[4]}",

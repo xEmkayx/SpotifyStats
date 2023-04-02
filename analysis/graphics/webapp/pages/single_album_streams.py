@@ -13,16 +13,16 @@ dash.register_page(__name__)
 # df = pd.read_csv(fr'{df_common_path}\{fn_df_allrounder}.csv')
 df = dataframe_loader.get_default_dataframe()
 
-gr = df.groupby('Gespielt am').agg(
+gr = df.groupby('Played at').agg(
     {'Song-ID': 'first', 'Song': 'first', 'Artist': ', '.join, 'Artist-ID': ', '.join,
      'Album': 'first', 'Album-ID': 'first'})
 
-counted = gr.value_counts('Song-ID').rename({1: 'Song-ID', 2: 'Anzahl Streams'}).sort_index().reset_index()
-counted.set_axis(['Song-ID', 'Anzahl Streams'], axis=1, inplace=True)
+counted = gr.value_counts('Song-ID').rename({1: 'Song-ID', 2: 'Stream Count'}).sort_index().reset_index()
+counted.set_axis(['Song-ID', 'Stream Count'], axis=1, inplace=True)
 
-rest = gr.reset_index().drop('Gespielt am', axis=1).drop_duplicates('Song-ID').sort_values('Song-ID')
+rest = gr.reset_index().drop('Played at', axis=1).drop_duplicates('Song-ID').sort_values('Song-ID')
 
-df_combined = pd.merge(counted, rest).sort_values('Anzahl Streams', ascending=False)
+df_combined = pd.merge(counted, rest).sort_values('Stream Count', ascending=False)
 
 graph = dcc.Graph(
     id='single-albums-bar'
@@ -84,13 +84,13 @@ def update_graph(alb_name, limit, rbvalue, theme):
     else:
         df_filtered = df_combined[df_combined['Album'].str.contains(str(alb_name), case=False)].head(n=limit)
 
-    single_album_barchart = px.bar(df_filtered, y='Song', x='Anzahl Streams',
+    single_album_barchart = px.bar(df_filtered, y='Song', x='Stream Count',
                                    title=f'Titel vom Album "{alb_name}"', height=1000,
                                    # text_auto='.2s',
                                    orientation='h',
-                                   color='Anzahl Streams', color_continuous_scale=default_color_scale,
+                                   color='Stream Count', color_continuous_scale=default_color_scale,
                                    template=template_from_url(theme),
-                                   custom_data=['Album', 'Artist', 'Song', 'Anzahl Streams'])
+                                   custom_data=['Album', 'Artist', 'Song', 'Stream Count'])
     single_album_barchart.update_traces(textfont_size=12, textangle=0, textposition="outside", cliponaxis=False)
     single_album_barchart.update_layout(yaxis=dict(autorange="reversed"))
 

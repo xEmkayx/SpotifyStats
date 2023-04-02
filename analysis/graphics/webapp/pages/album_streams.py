@@ -18,13 +18,13 @@ dash.register_page(__name__)
 # df = pd.read_csv(fr'{df_common_path}\{fn_df_allrounder}.csv')
 df = dataframe_loader.get_default_dataframe()
 
-gr = df.groupby('Gespielt am').agg({'Album': 'first', 'Album-ID': 'first',
+gr = df.groupby('Played at').agg({'Album': 'first', 'Album-ID': 'first',
                                     'Artist': ', '.join, 'Artist-ID': ', '.join,
                                     })
-counted = gr.value_counts('Album-ID').rename({1: 'Album-ID', 2: 'Anzahl Streams'}).sort_index().reset_index()
-counted.set_axis(['Album-ID', 'Anzahl Streams'], axis=1, inplace=True)
-rest = gr.reset_index().drop('Gespielt am', axis=1).drop_duplicates('Album-ID').sort_values('Album-ID')
-df_combined = pd.merge(counted, rest).sort_values('Anzahl Streams', ascending=False)
+counted = gr.value_counts('Album-ID').rename({1: 'Album-ID', 2: 'Stream Count'}).sort_index().reset_index()
+counted.set_axis(['Album-ID', 'Stream Count'], axis=1, inplace=True)
+rest = gr.reset_index().drop('Played at', axis=1).drop_duplicates('Album-ID').sort_values('Album-ID')
+df_combined = pd.merge(counted, rest).sort_values('Stream Count', ascending=False)
 
 graph = dcc.Graph(
     id='album-streams-line'
@@ -41,17 +41,17 @@ layout = html.Div(children=[
     Input(ThemeChangerAIO.ids.radio("all-themes"), "value"),
 )
 def update_graph_theme(theme):
-    all_albums_plot = px.bar(df_combined.head(n=50), x='Album', y="Anzahl Streams", height=1000,  # markers=True,
+    all_albums_plot = px.bar(df_combined.head(n=50), x='Album', y="Stream Count", height=1000,  # markers=True,
                              title='Top Albums Streams',
-                             color='Anzahl Streams', color_continuous_scale=default_color_scale,
-                             custom_data=['Album', 'Anzahl Streams', 'Artist', 'Album-ID', 'Artist-ID'],
+                             color='Stream Count', color_continuous_scale=default_color_scale,
+                             custom_data=['Album', 'Stream Count', 'Artist', 'Album-ID', 'Artist-ID'],
                              template=template_from_url(theme)
                              )
 
     all_albums_plot.update_traces(
         hovertemplate="<br>".join([
             "Album: %{customdata[0]}",
-            "Anzahl Streams: %{customdata[1]}",
+            "Stream Count: %{customdata[1]}",
             "Artist: %{customdata[2]}",
             "Album-ID: %{customdata[3]}",
             "Artist-ID: %{customdata[4]}",
