@@ -5,6 +5,7 @@ from dash_bootstrap_templates import ThemeChangerAIO, template_from_url
 
 from analysis.graphics.webapp.helpers import summary_helpers
 from analysis.graphics.webapp.helpers.time_functions import *
+from analysis.graphics.webapp.helpers import consts
 from spotify_scripts import playlist_creator
 
 dash.register_page(__name__)
@@ -12,14 +13,12 @@ dash.register_page(__name__)
 onscreen_songs = []
 
 # TODO: MORGENS/ABENDS
-tomorrow = date(datetime.now().year, datetime.now().month, datetime.now().day + 1)
-
 datepicker = dcc.DatePickerRange(
     id='date-picker-summary',
     min_date_allowed=date(2010, 1, 1),
-    max_date_allowed=tomorrow,  # date(2022, 12, 12),  #
-    initial_visible_month=date.today(),  # date(2022, 11, 1),  #
-    end_date=tomorrow,
+    max_date_allowed=consts.TOMORROW_DATE,
+    initial_visible_month=date.today(),
+    end_date=consts.TOMORROW_DATE,
     start_date=date(datetime.now().year, 1, 1)
 )
 
@@ -35,8 +34,8 @@ def init_songs(start_date: str = str(date(datetime.now().year, 1, 1)),
     for idx, i in enumerate(
             summary_helpers.get_top_songs_cards(start_date=start_date, end_date=end_date, return_amount=amount,
                                                 sorted_by_mins=sorted_by_minutes)):
-        id = i.song_id
-        onscreen_songs.append(id)
+        s_id = i.song_id
+        onscreen_songs.append(s_id)
 
         wr = html.Li(
             children=[
@@ -51,7 +50,7 @@ def init_songs(start_date: str = str(date(datetime.now().year, 1, 1)),
                     html.Span(f"{i.streamed_amount}x gestreamed"),
                     html.Span(f'ca. {round(i.streamed_minutes, 2)} Minuten'),
                     html.Br(),
-                    html.Span(f'({id})')
+                    html.Span(f'({s_id})')
                 ])
             ]
         )

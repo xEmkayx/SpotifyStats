@@ -15,7 +15,7 @@ def get_7days():
     days_ago = datetime.now() - delta
     start_date = f'{days_ago.year}-{days_ago.month}-{days_ago.day}'
     end_date = str(date(datetime.now().year, datetime.now().month, datetime.now().day + 1))
-    print(f'7d - {start_date}, {end_date}')
+    # print(f'7d - {start_date}, {end_date}')
     return start_date, end_date
 
 
@@ -24,7 +24,7 @@ def get_last_month():
     days_ago = datetime.now() - delta
     start_date = f'{days_ago.year}-{days_ago.month}-{days_ago.day}'
     end_date = str(date(datetime.now().year, datetime.now().month, datetime.now().day + 1))
-    print(f'month - {start_date}, {end_date}')
+    # print(f'month - {start_date}, {end_date}')
 
     return start_date, end_date
 
@@ -35,7 +35,7 @@ def get_last_year():
     start_date = f'{days_ago.year}-{days_ago.month}-{days_ago.day}'
     end_date = str(date(datetime.now().year, datetime.now().month, datetime.now().day + 1))
 
-    print(f'year - {start_date}, {end_date}')
+    # print(f'year - {start_date}, {end_date}')
     return start_date, end_date
 
 

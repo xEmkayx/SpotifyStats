@@ -1,3 +1,5 @@
+from datetime import date, datetime, timedelta
+
 default_color_scale = 'tealrose'
 color_scales = ['aggrnyl', 'agsunset',
                 'blackbody', 'bluered', 'blues', 'blugrn', 'bluyl', 'brwnyl',
@@ -19,3 +21,5 @@ color_scales = ['aggrnyl', 'agsunset',
                 'balance', 'curl', 'delta', 'oxy', 'edge',
                 'hsv', 'icefire', 'phase', 'twilight', 'mrybm', 'mygbm'
                 ]
+
+TOMORROW_DATE = date(datetime.now().year, datetime.now().month, datetime.now().day + 1)
