@@ -3,10 +3,11 @@ import plotly.express as px
 from dash import html, dcc, callback, Input, Output
 from dash_bootstrap_templates import ThemeChangerAIO, template_from_url
 
+from analysis.graphics.webapp.df_files import dataframe_getter
 from analysis.graphics.webapp.helpers.consts import *
 from analysis.graphics.webapp.helpers.time_functions import *
 import dash_bootstrap_components as dbc
-from analysis.graphics.webapp.helpers import summary_helpers
+from analysis.graphics.webapp.helpers import dataframe_helpers
 
 dash.register_page(__name__)
 
@@ -124,7 +125,11 @@ def button_events_graph(b7d, bmonth, byear):
     Input('inp-amount-top-albums', 'value')
 )
 def update_graph_theme(start_date, end_date, theme, amount):
-    ndf = summary_helpers.get_top_albums(start_date=start_date, end_date=end_date)
+    # df = dataframe_getter.get_top_album_df()
+    # mask = dataframe_helpers.date_mask(start_date=start_date, end_date=end_date)
+    # ndf = df.loc[mask]
+
+    ndf = dataframe_helpers.get_top_albums(start_date=start_date, end_date=end_date)
 
     all_albums_plot = px.bar(ndf.head(n=amount), x='Album', y="Stream Count", height=1000,  # markers=True,
                              title='Top Albums Streams',
