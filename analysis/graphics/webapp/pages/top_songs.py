@@ -233,6 +233,7 @@ def update_graph_theme(theme, start_date, end_date, btn_7d, btn_m, btn_y, radio_
         ])
         # TODO: output der Methoden gettopsongsdf von helper und getter vergleichen; anzeigeprobleme nur bei
         # Methode von getter
+
     df_combined = dataframe_helpers.get_top_songs_df(start_date=start_date, end_date=end_date,
                                                      sorted_by_mins=sorted_by_minutes)
 
@@ -252,7 +253,6 @@ def update_graph_theme(theme, start_date, end_date, btn_7d, btn_m, btn_y, radio_
                   custom_data=custom_data)
     """
 
-    # ndf
     fig = px.bar(df_combined.head(amount), x='Song', y=y_axis, height=850,
                  title='Top Song Streams',
                  color='Stream Count', color_continuous_scale=default_color_scale,
@@ -260,7 +260,6 @@ def update_graph_theme(theme, start_date, end_date, btn_7d, btn_m, btn_y, radio_
                  template=template_from_url(theme))
 
     fig.update_traces(hovertemplate=hover_text)
-    print(f'{days}-{hours}-{minutes}-{seconds}')
     return fig, sum_text, days, hours, minutes, seconds
 
 
