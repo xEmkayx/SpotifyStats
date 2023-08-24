@@ -6,15 +6,14 @@ from dash_bootstrap_templates import ThemeChangerAIO, template_from_url
 
 from analysis.graphics.webapp.helpers.time_functions import *
 from analysis.graphics.webapp.select_statements import *
-from analysis.graphics.webapp.helpers import summary_helpers
-from analysis.graphics.webapp.df_files import dataframe_loader
+from analysis.graphics.webapp.helpers import dataframe_helpers
+from analysis.graphics.webapp.df_files import dataframe_loader, dataframe_getter
 from analysis.graphics.webapp.helpers.consts import *
 
 dash.register_page(__name__)
 
 # df = pd.read_csv(fr'{df_common_path}\{fn_df_allrounder}.csv')
-df = dataframe_loader.get_default_dataframe()
-
+# df = dataframe_loader.get_default_dataframe()
 graph = dcc.Graph(
     id='stream-minutes-plot',
 )
@@ -96,8 +95,11 @@ buttons = dbc.ButtonGroup(
         button_year
     ]
 )
-
-tabelle = dbc.Table.from_dataframe(df.head(n=100), striped=True, bordered=True, hover=True, id='tab-s-minutes')
+"""
+TODO: Tabelle wieder implementieren
+tabelle = dbc.Table(id='tab-s-minutes').from_dataframe(df.head(n=100), 
+striped=True, bordered=True, hover=True, id='tab-s-minutes')
+"""
 
 tab_normal = dbc.Tab(
     [
@@ -109,6 +111,7 @@ tab_normal = dbc.Tab(
     label='Graph',
 )
 
+"""
 tab_tabelle = dbc.Tab(
     [
         dcc.Loading(
@@ -119,11 +122,12 @@ tab_tabelle = dbc.Tab(
     label='Tabelle',
     # selected_className='custom-tab--selected',
 )
+"""
 
 tabs = dcc.Tabs(
     [
         tab_normal,
-        tab_tabelle
+        # tab_tabelle
     ],
     parent_className='custom-tabs',
     className='custom-tabs-container',
@@ -227,13 +231,12 @@ def update_graph_theme(theme, start_date, end_date, btn_7d, btn_m, btn_y, radio_
             "Artist-ID: %{customdata[4]}",
             "Album-ID: %{customdata[6]}",
         ])
-    df_combined = summary_helpers.get_top_songs_df(start_date=start_date, end_date=end_date,
-                                                   sorted_by_mins=sorted_by_minutes)
+        # TODO: output der Methoden gettopsongsdf von helper und getter vergleichen; anzeigeprobleme nur bei
+        # Methode von getter
+    df_combined = dataframe_helpers.get_top_songs_df(start_date=start_date, end_date=end_date,
+                                                     sorted_by_mins=sorted_by_minutes)
 
-    mask = summary_helpers.date_mask(start_date, end_date)
-    ndf = df.loc[mask]
-
-    stream_sum = pd.to_timedelta('00:' + ndf["Song Length"]).sum()
+    stream_sum = pd.to_timedelta('00:' + df_combined["Song Length"]).sum()
     sum_conv = strfdelta(stream_sum, "{days} Tage, {hours} Stunden, {minutes} Minuten und {seconds} Sekunden")
     sum_text = f'(Ungefähre) Gesamte Hörzeit: {sum_conv}'
     days = strfdelta(stream_sum, "{days}")
@@ -249,6 +252,7 @@ def update_graph_theme(theme, start_date, end_date, btn_7d, btn_m, btn_y, radio_
                   custom_data=custom_data)
     """
 
+    # ndf
     fig = px.bar(df_combined.head(amount), x='Song', y=y_axis, height=850,
                  title='Top Song Streams',
                  color='Stream Count', color_continuous_scale=default_color_scale,
@@ -256,6 +260,7 @@ def update_graph_theme(theme, start_date, end_date, btn_7d, btn_m, btn_y, radio_
                  template=template_from_url(theme))
 
     fig.update_traces(hovertemplate=hover_text)
+    print(f'{days}-{hours}-{minutes}-{seconds}')
     return fig, sum_text, days, hours, minutes, seconds
 
 
@@ -287,6 +292,7 @@ def button_events_graph(b7d, bmonth, byear):
     return s_date, e_date, 0, 0, 0
 
 
+"""
 @callback(
     Output('tab-s-minutes', 'children'),
     # TODO:
@@ -306,8 +312,9 @@ def update_table(start_date, end_date, radio_values):
     else:
         sorted_by_minutes = True
 
-    df_combined = summary_helpers.get_top_songs_df(start_date=start_date, end_date=end_date,
-                                                   sorted_by_mins=sorted_by_minutes)
+    df_combined = dataframe_helpers.get_top_songs_df(start_date=start_date, end_date=end_date,
+                                                     sorted_by_mins=sorted_by_minutes)
 
     tab = dbc.Table.from_dataframe(df_combined.head(n=1000), striped=True, bordered=True, hover=True)
     return tab
+"""
