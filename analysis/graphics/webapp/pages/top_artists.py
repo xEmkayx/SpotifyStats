@@ -14,14 +14,12 @@ dash.register_page(__name__)
 # df = pd.read_csv(fr'{df_common_path}\{fn_df_allrounder}.csv')
 # df = dataframe_loader.get_default_dataframe()
 
-tomorrow = date(datetime.now().year, datetime.now().month, datetime.now().day + 1)
-
 datepicker = dcc.DatePickerRange(
     id='top-artists-date-picker',
     min_date_allowed=date(2010, 1, 1),
-    max_date_allowed=tomorrow,  # date(2022, 12, 12),  #
+    max_date_allowed=TOMORROW_DATE,  # date(2022, 12, 12),  #
     initial_visible_month=date.today(),  # date(2022, 11, 1),  #
-    end_date=tomorrow,
+    end_date=TOMORROW_DATE,
     start_date=date(datetime.now().year, 1, 1)
 )
 

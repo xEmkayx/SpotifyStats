@@ -1,4 +1,5 @@
 from datetime import date, datetime, timedelta
+# import datetime
 
 default_color_scale = 'tealrose'
 color_scales = ['aggrnyl', 'agsunset',
@@ -22,4 +23,4 @@ color_scales = ['aggrnyl', 'agsunset',
                 'hsv', 'icefire', 'phase', 'twilight', 'mrybm', 'mygbm'
                 ]
 
-TOMORROW_DATE = date(datetime.now().year, datetime.now().month, datetime.now().day + 1)
+TOMORROW_DATE = date.today() + timedelta(days=1)

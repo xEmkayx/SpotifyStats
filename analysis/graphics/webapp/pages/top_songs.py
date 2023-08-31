@@ -19,14 +19,13 @@ graph = dcc.Graph(
 )
 
 # TODO: MORGENS/ABENDS
-tomorrow = date(datetime.now().year, datetime.now().month, datetime.now().day + 1)
 
 datepicker = dcc.DatePickerRange(
     id='stream-minutes-date-picker-minutes',
     min_date_allowed=date(2010, 1, 1),
-    max_date_allowed=tomorrow,  # date(2022, 12, 12),  #
+    max_date_allowed=TOMORROW_DATE,  # date(2022, 12, 12),  #
     initial_visible_month=date.today(),  # date(2022, 11, 1),  #
-    end_date=tomorrow,
+    end_date=TOMORROW_DATE,
     start_date=date(datetime.now().year, 1, 1)
 )
 
@@ -61,6 +60,10 @@ hz_neu = html.Center(
         ]
 
     )
+)
+
+total_streams = html.Div(
+    id='total_streams-minutes-sm'
 )
 
 button_7d = dbc.Button(
@@ -174,6 +177,8 @@ layout = html.Div(children=[
     html.Br(),
     streamed_by_buttons,
     hoerzeit,
+    # html.Br(),
+    total_streams,
     hz_neu,
     tabs
 ])
@@ -186,6 +191,7 @@ layout = html.Div(children=[
     Output('hours-sm', 'children'),
     Output('sm-minutes', 'children'),
     Output('sm-seconds', 'children'),
+    Output('total_streams-minutes-sm', 'children'),
 
     Input(ThemeChangerAIO.ids.radio("all-themes"), "value"),
     Input('stream-minutes-date-picker-minutes', 'start_date'),
@@ -240,10 +246,12 @@ def update_graph_theme(theme, start_date, end_date, btn_7d, btn_m, btn_y, radio_
     stream_sum = pd.to_timedelta('00:' + df_combined["Song Length"]).sum()
     sum_conv = strfdelta(stream_sum, "{days} Tage, {hours} Stunden, {minutes} Minuten und {seconds} Sekunden")
     sum_text = f'(Ungefähre) Gesamte Hörzeit: {sum_conv}'
+
     days = strfdelta(stream_sum, "{days}")
     hours = strfdelta(stream_sum, "{hours}")
     minutes = strfdelta(stream_sum, "{minutes}")
     seconds = strfdelta(stream_sum, "{seconds}")
+    streams_text = f'Total Streams: {df_combined.shape[0]}'
 
     """
     fig = px.line(df_combined.head(n=amount), x="Song", y=y_axis,
@@ -260,7 +268,7 @@ def update_graph_theme(theme, start_date, end_date, btn_7d, btn_m, btn_y, radio_
                  template=template_from_url(theme))
 
     fig.update_traces(hovertemplate=hover_text)
-    return fig, sum_text, days, hours, minutes, seconds
+    return fig, sum_text, days, hours, minutes, seconds, streams_text
 
 
 @callback(

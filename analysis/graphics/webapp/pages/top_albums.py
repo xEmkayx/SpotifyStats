@@ -9,6 +9,7 @@ from analysis.graphics.webapp.helpers.time_functions import *
 import dash_bootstrap_components as dbc
 from analysis.graphics.webapp.helpers import dataframe_helpers
 
+
 dash.register_page(__name__)
 
 graph = dcc.Graph(
@@ -17,14 +18,12 @@ graph = dcc.Graph(
 
 theme_change = ThemeChangerAIO(aio_id="theme")
 
-tomorrow = date(datetime.now().year, datetime.now().month, datetime.now().day + 1)
-
 datepicker = dcc.DatePickerRange(
     id='top-albums-date-picker',
     min_date_allowed=date(2010, 1, 1),
-    max_date_allowed=tomorrow,  # date(2022, 12, 12),  #
+    max_date_allowed=TOMORROW_DATE,  # date(2022, 12, 12),  #
     initial_visible_month=date.today(),  # date(2022, 11, 1),  #
-    end_date=tomorrow,
+    end_date=TOMORROW_DATE,
     start_date=date(datetime.now().year, 1, 1)
 )
 
