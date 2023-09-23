@@ -2,9 +2,10 @@ import dash
 import dash_bootstrap_components as dbc
 from dash import html, callback, Input, Output, no_update
 
+from analysis.graphics.webapp.helpers import dataframe_helpers
 from analysis.graphics.webapp.helpers.setting_functions import *
-from analysis.graphics.webapp.df_files import dataframe_loader
-
+from analysis.graphics.webapp.df_files import dataframe_loader, dataframe_getter
+import asyncio
 
 dash.register_page(__name__)
 
@@ -58,7 +59,10 @@ def setting_actions(bclick):
     text = ''
     if bclick != 0:
         # reset_df()
-        dataframe_loader.reload_dataframe()
+        # dataframe_loader.reload_dataframe()
+        print('Started reloading DataFrame...')
+        dataframe_getter.reload_dfs()
+        print('Reloading DataFrame: Done')
         ret = True
         text = f'DataFrame neu geladen'
     elif bclick == 0:

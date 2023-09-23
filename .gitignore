@@ -221,3 +221,4 @@ fabric.properties
 !/requirements_latest.txt
 !/envv_310/
 !/private/auth.ini
+!/analysis/graphics/webapp/pages/test.py

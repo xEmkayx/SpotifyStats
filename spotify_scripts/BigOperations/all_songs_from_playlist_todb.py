@@ -26,7 +26,7 @@ logging.basicConfig(
 )
 
 playlist_link = r'PLAYLIST_LINK'  # Insert playlist link here
-playlist_id = r'PLAYLIST_ID'  # Insert playlist ID here
+playlist_id = r'55dmRytawB4Hqzu4XfEqoJ'  # Insert playlist ID here
 
 scope = 'user-read-recently-played user-library-read playlist-read-private ' \
         'playlist-read-collaborative user-top-read user-read-currently-playing'

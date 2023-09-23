@@ -4,11 +4,16 @@ import plotly.express as px
 from dash import html, dcc, callback, Input, Output
 from dash_bootstrap_templates import ThemeChangerAIO, template_from_url
 
+from analysis.graphics.webapp.components.streamed_time import StreamedTime
 from analysis.graphics.webapp.helpers.time_functions import *
 from analysis.graphics.webapp.select_statements import *
 from analysis.graphics.webapp.helpers import dataframe_helpers
 from analysis.graphics.webapp.df_files import dataframe_loader, dataframe_getter
 from analysis.graphics.webapp.helpers.consts import *
+from analysis.graphics.webapp.components.StreamSortSwitchButton import StreamSortSwitchButton
+from analysis.graphics.webapp.components.create_playlist_button import CreatePlaylistButton
+from analysis.graphics.webapp.components.selection_box import SelectionBox, B7D_NAME, BMONTH_NAME, BYEAR_NAME
+from analysis.graphics.webapp.helpers import summary_helpers, name_helpers
 
 dash.register_page(__name__)
 
@@ -18,86 +23,23 @@ graph = dcc.Graph(
     id='stream-minutes-plot',
 )
 
-# TODO: MORGENS/ABENDS
+current_filename = name_helpers.get_current_file_name(__file__)
+sb = SelectionBox(current_filename)
+datepicker_id = sb.get_datepicker_id()
+b_ids = sb.get_buttons_ids()
+b7d_id = b_ids[B7D_NAME]
+bmonth_id = b_ids[BMONTH_NAME]
+byear_id = b_ids[BYEAR_NAME]
+input_id = sb.get_input_id()
 
-datepicker = dcc.DatePickerRange(
-    id='stream-minutes-date-picker-minutes',
-    min_date_allowed=date(2010, 1, 1),
-    max_date_allowed=TOMORROW_DATE,  # date(2022, 12, 12),  #
-    initial_visible_month=date.today(),  # date(2022, 11, 1),  #
-    end_date=TOMORROW_DATE,
-    start_date=date(datetime.now().year, 1, 1)
-)
+streamed_by_buttons = StreamSortSwitchButton(current_filename)
+streamed_by_buttons_id = streamed_by_buttons.get_id()
 
-hoerzeit = html.Div(
-    id='hoerzeit-minutes-sm'
-)
-hz_neu = html.Center(
-    html.Div(
-        id='hz',
-        className='hz-container',
-        children=[
-            html.Div(
-                className='date',
-                id='sm-days'
-            ),
-            html.Label('D', className='date-text'),
-            html.Div(
-                className='date',
-                id='hours-sm'
-            ),
-            html.Label('H', className='date-text'),
-            html.Div(
-                className='date',
-                id='sm-minutes'
-            ),
-            html.Label('M', className='date-text'),
-            html.Div(
-                className='date',
-                id='sm-seconds'
-            ),
-            html.Label('S', className='date-text', style={'margin-right': '10px'}),
-        ]
+playlist_button = CreatePlaylistButton(current_filename)
+playlist_button_id = playlist_button.get_id()
 
-    )
-)
+streamed_time = StreamedTime(current_filename)
 
-total_streams = html.Div(
-    id='total_streams-minutes-sm'
-)
-
-button_7d = dbc.Button(
-    'Letzte 7 Tage',
-    id='stream-minutes-button-7d-s-minutes',
-    outline=True,
-    color='primary',
-    n_clicks=0
-)
-
-button_month = dbc.Button(
-    'Letzter Monat',
-    id='stream-minutes-button-month-s-minutes',
-    outline=True,
-    color='primary',
-    n_clicks=0
-)
-
-button_year = dbc.Button(
-    'Letztes Jahr',
-    id='stream-minutes-button-year-s-minutes',
-    outline=True,
-    color='primary',
-    n_clicks=0
-)
-
-buttons = dbc.ButtonGroup(
-    id='btn-group',
-    children=[
-        button_7d,
-        button_month,
-        button_year
-    ]
-)
 """
 TODO: Tabelle wieder implementieren
 tabelle = dbc.Table(id='tab-s-minutes').from_dataframe(df.head(n=100), 
@@ -145,73 +87,34 @@ tabs = dbc.Tabs(
     className='custom-tabs-container',
 )
 
-streamed_by_buttons = html.Div(
-    [
-        dbc.RadioItems(
-            id="songs-line-streamed-by-radios",
-            className="btn-group",
-            inputClassName="btn-check",
-            labelClassName="btn btn-outline-primary",
-            labelCheckedClassName="active",
-            options=[
-                {"label": "Sort by total count of Streams", "value": 1},
-                {"label": "Sort by total streamed minutes", "value": 2},
-            ],
-            value=1,
-        )
-    ],
-    className="radio-group",
-)
-
-amount_tb = dbc.Input(
-    id='inp-amount-top-songs',
-    type='number',
-    value=10,
-    className='inp-summary',
-    style={
-        'width': '4%',
-        'margin-left': '5px',
-        'margin-right': '5px',
-        'display': 'inline-block',
-        # 'filter': 'contrast(200%)',
-    }
-)
-
 layout = html.Div(children=[
     html.H1(children='Top Song streams in range'),
-    datepicker,
-    amount_tb,
-    html.Br(),
-    buttons,
-    html.Br(),
-    streamed_by_buttons,
-    hoerzeit,
-    # html.Br(),
-    total_streams,
-    hz_neu,
+    sb.render(),
+    streamed_by_buttons.render(),
+    streamed_time.render(),
     tabs
 ])
 
 
 @callback(
     Output("stream-minutes-plot", "figure"),
-    Output('hoerzeit-minutes-sm', 'children'),
-    Output('sm-days', 'children'),
-    Output('hours-sm', 'children'),
-    Output('sm-minutes', 'children'),
-    Output('sm-seconds', 'children'),
-    Output('total_streams-minutes-sm', 'children'),
+    Output(streamed_time.stream_time_text_id, 'children'),
+    Output(streamed_time.days_id, 'children'),
+    Output(streamed_time.hours_id, 'children'),
+    Output(streamed_time.minutes_id, 'children'),
+    Output(streamed_time.seconds_id, 'children'),
+    Output(streamed_time.total_streams_id, 'children'),
 
     Input(ThemeChangerAIO.ids.radio("all-themes"), "value"),
-    Input('stream-minutes-date-picker-minutes', 'start_date'),
-    Input('stream-minutes-date-picker-minutes', 'end_date'),
+    Input(datepicker_id, 'start_date'),
+    Input(datepicker_id, 'end_date'),
     [  # Input('btn-group', 'submit'),
-        Input("stream-minutes-button-7d-s-minutes", "n_clicks"),
-        Input('stream-minutes-button-month-s-minutes', 'n_clicks'),
-        Input('stream-minutes-button-year-s-minutes', 'n_clicks'),
-        Input("songs-line-streamed-by-radios", "value")
+        Input(b7d_id, "n_clicks"),
+        Input(bmonth_id, 'n_clicks'),
+        Input(byear_id, 'n_clicks'),
+        Input(streamed_by_buttons_id, "value")
     ],
-    Input('inp-amount-top-songs', 'value')
+    Input(input_id, 'value')
 )
 def update_graph_theme(theme, start_date, end_date, btn_7d, btn_m, btn_y, radio_values, amount):
     btn_7d = btn_m = btn_y = 0
@@ -282,15 +185,15 @@ def update_graph_theme(theme, start_date, end_date, btn_7d, btn_m, btn_y, radio_
 
 
 @callback(
-    Output('stream-minutes-date-picker-minutes', 'start_date'),
-    Output('stream-minutes-date-picker-minutes', 'end_date'),
-    Output('stream-minutes-button-7d-s-minutes', 'n_clicks'),
-    Output('stream-minutes-button-month-s-minutes', 'n_clicks'),
-    Output('stream-minutes-button-year-s-minutes', 'n_clicks'),
+    Output(datepicker_id, 'start_date'),
+    Output(datepicker_id, 'end_date'),
+    Output(b7d_id, 'n_clicks'),
+    Output(bmonth_id, 'n_clicks'),
+    Output(byear_id, 'n_clicks'),
 
-    [Input("stream-minutes-button-7d-s-minutes", "n_clicks"),
-     Input('stream-minutes-button-month-s-minutes', 'n_clicks'),
-     Input('stream-minutes-button-year-s-minutes', 'n_clicks'),
+    [Input(b7d_id, "n_clicks"),
+     Input(bmonth_id, 'n_clicks'),
+     Input(byear_id, 'n_clicks'),
      ]
 )
 def button_events_graph(b7d, bmonth, byear):

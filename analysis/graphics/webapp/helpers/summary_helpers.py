@@ -1,48 +1,18 @@
+"""
+    Helper functions for the summary page
+"""
+from analysis.graphics.webapp.helpers import dataframe_helpers
+from analysis.graphics.webapp.helpers import summary_cards, time_functions
 from datetime import date, datetime
-
-import pandas
-import pandas as pd
-
 import spotipy
 from spotipy import SpotifyOAuth
-
-from analysis.graphics.webapp.helpers import summary_cards, time_functions
-# from analysis.graphics.webapp.helpers.df_filenames import df_common_path, fn_df_allrounder
 from private.auth import CLIENT_ID, REDIRECT_URI, CLIENT_SECRET
-from analysis.graphics.webapp.df_files import dataframe_loader
+from dash import html, dcc, callback, Input, Output, DiskcacheManager
+import dash_bootstrap_components as dbc
+from analysis.graphics.webapp.helpers import name_helpers
 
 spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=CLIENT_ID, client_secret=CLIENT_SECRET,
                                                     redirect_uri=REDIRECT_URI, scope=''))
-
-# df = pd.read_csv(fr'{df_common_path}\{fn_df_allrounder}.csv')
-# df = dataframe_loader.get_default_dataframe()
-
-
-def date_mask(start_date: str, end_date: str):
-    df = dataframe_loader.get_default_dataframe()
-    df['Played at'] = pd.to_datetime(df['Played at'], format='%Y-%m-%dT%H:%M')
-    mask = (df['Played at'] >= start_date) & (df['Played at'] <= end_date)
-    return mask
-
-
-def get_top_songs_df(start_date: str = str(date(2010, 1, 1)), end_date: str = str(date.today()),
-                     sorted_by_mins: bool = False):
-    df = dataframe_loader.get_default_dataframe()
-    mask = date_mask(start_date, end_date)
-    ndf = df.loc[mask]
-
-    if sorted_by_mins:
-        df_combined = normalize_to_minutes(ndf.copy(deep=True))
-    else:
-        gr = ndf.groupby('Played at').agg(
-            {'Song-ID': 'first', 'Song': 'first', 'Artist': ', '.join, 'Artist-ID': ', '.join,
-             'Album': 'first', 'Album-ID': 'first', 'Song Length': 'first'})
-
-        counted = gr.value_counts('Song-ID').rename({1: 'Song-ID', 2: 'Stream Count'}).sort_index().reset_index()
-        counted.set_axis(['Song-ID', 'Stream Count'], axis=1, inplace=True)
-        rest = gr.reset_index().drop('Played at', axis=1).drop_duplicates('Song-ID').sort_values('Song-ID')
-        df_combined = pd.merge(counted, rest).sort_values('Stream Count', ascending=False)
-    return df_combined
 
 
 def get_top_songs_cards(start_date: str = str(date(2010, 1, 1)), end_date: str = str(date.today()),
@@ -55,7 +25,8 @@ def get_top_songs_cards(start_date: str = str(date(2010, 1, 1)), end_date: str =
     :param sorted_by_mins:
     :return:
     """
-    df_top_x = get_top_songs_df(start_date=start_date, end_date=end_date, sorted_by_mins=sorted_by_mins)\
+    df_top_x = dataframe_helpers.get_top_songs_df(start_date=start_date, end_date=end_date,
+                                                  sorted_by_mins=sorted_by_mins) \
         .head(return_amount)
 
     song_card_list: list[summary_cards.SongSummary] = []
@@ -95,22 +66,8 @@ def get_song_image(song_id: str):
     return image_link
 
 
-def get_top_artists(start_date: str = str(date(2010, 1, 1)), end_date: str = str(date.today())):
-    df = dataframe_loader.get_default_dataframe()
-    mask = date_mask(start_date, end_date)
-    ndf = df.loc[mask]
-
-    gr = ndf.groupby(['Artist', 'Artist-ID'], as_index=False).size()
-    df_sorted = gr.sort_values(by=['size'], ascending=False)
-    df_sorted.rename({1: 'Artist', 2: 'Artist-ID', 3: 'Stream Count'})
-    df_sorted.set_axis(['Artist', 'Artist-ID', 'Stream Count'], axis=1, inplace=True)
-
-    return df_sorted
-
-
 def get_top_artists_cards(start_date: str = str(date(2010, 1, 1)), end_date: str = str(date.today()),
                           return_amount: int = 10):
-
     """
     df = dataframe_loader.get_default_dataframe()
     mask = date_mask(start_date, end_date)
@@ -121,7 +78,7 @@ def get_top_artists_cards(start_date: str = str(date(2010, 1, 1)), end_date: str
     df_sorted.rename({1: 'Artist', 2: 'Artist-ID', 3: 'Stream Count'})
     df_sorted.set_axis(['Artist', 'Artist-ID', 'Stream Count'], axis=1, inplace=True)
     """
-    df_sorted = get_top_artists(start_date=start_date, end_date=end_date)
+    df_sorted = dataframe_helpers.get_top_artists(start_date=start_date, end_date=end_date)
     df_top_x = df_sorted.head(return_amount)
 
     artist_card_list: list[summary_cards.ArtistSummary] = []
@@ -151,21 +108,6 @@ def get_artist_image(artist_id: str):
         return 'https://vectorified.com/images/no-profile-picture-icon-21.jpg'
 
 
-def get_top_albums(start_date: str = str(date(2010, 1, 1)), end_date: str = str(date.today())):
-    df = dataframe_loader.get_default_dataframe()
-    mask = date_mask(start_date, end_date)
-    ndf = df.loc[mask]
-
-    gr = ndf.groupby('Played at').agg({'Album': 'first', 'Album-ID': 'first',
-                                       'Artist': ', '.join, 'Artist-ID': ', '.join,
-                                       })
-    counted = gr.value_counts('Album-ID').rename({1: 'Album-ID', 2: 'Stream Count'}).sort_index().reset_index()
-    counted.set_axis(['Album-ID', 'Stream Count'], axis=1, inplace=True)
-    rest = gr.reset_index().drop('Played at', axis=1).drop_duplicates('Album-ID').sort_values('Album-ID')
-    df_combined = pd.merge(counted, rest).sort_values('Stream Count', ascending=False)
-    return df_combined
-
-
 def get_top_album_cards(start_date: str = str(date(2010, 1, 1)), end_date: str = str(date.today()),
                         return_amount: int = 10):
     """
@@ -181,7 +123,7 @@ def get_top_album_cards(start_date: str = str(date(2010, 1, 1)), end_date: str =
     rest = gr.reset_index().drop('Played at', axis=1).drop_duplicates('Album-ID').sort_values('Album-ID')
     df_combined = pd.merge(counted, rest).sort_values('Stream Count', ascending=False)
     """
-    df_combined = get_top_albums(start_date=start_date, end_date=end_date)
+    df_combined = dataframe_helpers.get_top_albums(start_date=start_date, end_date=end_date)
     df_top_x = df_combined.head(return_amount)
 
     album_card_list: list[summary_cards.AlbumSummary] = []
@@ -209,45 +151,130 @@ def get_album_image(album_id: str):
     return img_link
 
 
-def normalize_to_minutes(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Normalizes a DataFrame, so it's sorted by its total streamed minutes
-    :param df: DataFrame to normalize
-    :return: normalized DataFrame
-    """
-    ndf = df
-    gr = ndf.groupby('Played at').agg(
-        {'Song-ID': 'first', 'Song': 'first', 'Artist': ', '.join, 'Artist-ID': ', '.join, 'Song Length': 'first',
-         'Album': 'first', 'Album-ID': 'first'})
+def init_songs(start_date: str = str(date(datetime.now().year, 1, 1)),
+               end_date: str = str(date(datetime.now().year, datetime.now().month, datetime.now().day)),
+               amount: int = 10, sorted_by_minutes: bool = False, onscreen_songs: list = None):
+    if onscreen_songs is None:
+        onscreen_songs = []
+    songs = []
+    songs_wrapper = []
+    onscreen_songs.clear()
 
-    counted = gr.value_counts('Song-ID').rename({1: 'Song-ID', 2: 'Stream Count'}).sort_index().reset_index()
+    for idx, i in enumerate(
+            get_top_songs_cards(start_date=start_date, end_date=end_date, return_amount=amount,
+                                sorted_by_mins=sorted_by_minutes)):
+        s_id = i.song_id
+        onscreen_songs.append(s_id)
 
-    gr['Song Length'] = pd.to_datetime(gr['Song Length'], format='%H:%M:%S', errors='coerce').fillna(
-        pd.to_datetime(gr['Song Length'],
-                       format='%M:%S'))
+        wr = html.Li(
+            children=[
+                html.Img(src=i.song_image, alt='https://vectorified.com/images/no-profile-picture-icon-21.jpg'),
+                html.Div(className='overlay', children=[
+                    html.Span(f"{i.artist_name}"),
+                    html.Br(),
+                    html.Span(f'{i.song_name}'),
+                    html.Br(),
+                    html.Span(f'{i.album_name}'),
+                    html.Br(),
+                    html.Span(f"{i.streamed_amount}x gestreamed"),
+                    html.Span(f'ca. {round(i.streamed_minutes, 2)} Minuten'),
+                    html.Br(),
+                    html.Span(f'({s_id})')
+                ])
+            ]
+        )
+        songs_wrapper.append(wr)
+    ul_songs = html.Ul(className='ul-songs-summary', children=songs_wrapper)
+    songs.append(ul_songs)
 
-    gr['Song Length'] = gr['Song Length'].dt.time
-    gr['Song Length'] = gr['Song Length'].astype(str)
+    sum_songs = html.Div(
+        [dbc.Spinner(
+            id='loading-summary-songs',
+            color='primary',
+            children=[
+                html.Div(
+                    id='div-summary-songs',
+                    className='div-summary-songs',
+                    children=songs
+                )
+            ]
+        )]
+    )
+    return sum_songs, onscreen_songs
 
-    counted.set_axis(['Song-ID', 'Stream Count'], axis=1, inplace=True)
-    rest = gr.reset_index().drop('Played at', axis=1).drop_duplicates('Song-ID').sort_values('Song-ID')
-    df_combined = pd.merge(counted, rest).sort_values('Stream Count', ascending=False)
 
-    df_combined['Dauer Sekunden'] = pd.to_timedelta(df_combined['Song Length']).dt.total_seconds()
-    df_combined['Streamed Mins'] = df_combined['Stream Count'] * (df_combined['Dauer Sekunden'] / 60)
+##############################
 
-    # df_combined['Streamed Mins'] = df_combined['Streamed Mins'].apply(lambda x: '{:.2f}'.format(x))
+def init_artists(start_date: str = str(date(datetime.now().year, 1, 1)),
+                 end_date: str = str(date(datetime.now().year, datetime.now().month, datetime.now().day)),
+                 amount: int = 10):
+    artists = []
+    artists_wrapper = []
+    for i in get_top_artists_cards(start_date=start_date, end_date=end_date, return_amount=amount):
+        wr = html.Li(
+            children=[
+                html.Img(src=i.artist_image, alt='https://vectorified.com/images/no-profile-picture-icon-21.jpg'),
+                html.Div(className='overlay', children=[
+                    html.Span(f'{i.artist_name}'),
+                    html.Span(f'{i.streamed_amount}x gestreamed'),
+                    html.Span(f'ca. {round(i.streamed_minutes, 2)} Minuten'),
+                    html.Span(f'({i.artist_id})')
+                ])
+            ]
+        )
+        artists_wrapper.append(wr)
 
-    df_combined = df_combined.sort_values('Streamed Mins', ascending=False)
-    return df_combined
+    ul_artists = html.Ul(className='ul-songs-summary', children=artists_wrapper)
+    artists.append(ul_artists)
+
+    sum_artists = html.Div([
+        dbc.Spinner(
+            id='loading-summary-artists',
+            color='primary',
+            children=[
+                html.Div(
+                    id='div-summary-artists',
+                    className='div-summary-songs',
+                    children=artists
+                )])
+    ])
+    return sum_artists
 
 
-if __name__ == '__main__':
-    # get_top_songs()
-    for i in get_top_artists_cards():
-        print(i.artist_image)
+#############################
 
-"""
-Startdate - <class 'str'>: 2023-1-28
-Enddate - <class 'str'>: 2023-01-29
-"""
+
+def init_albums(start_date: str = str(date(datetime.now().year, 1, 1)),
+                end_date: str = str(date(datetime.now().year, datetime.now().month, datetime.now().day)),
+                amount: int = 10):
+    albums = []
+    albums_wrapper = []
+    for i in get_top_album_cards(start_date=start_date, end_date=end_date, return_amount=amount):
+        text = f'{i.album_artist} - {i.album_name}'
+        wr = html.Li(
+            children=[
+                html.Img(src=i.album_image, alt=''),
+                html.Div(className='overlay', children=[
+                    html.Span(f'{i.album_artist}'),
+                    html.Span(f'{i.album_name}'),
+                    html.Span(f'({i.album_id})')
+                ])
+            ]
+        )
+        albums_wrapper.append(wr)
+    ul_albums = html.Ul(className='ul-songs-summary', children=albums_wrapper)
+    albums.append(ul_albums)
+
+    sum_albums = html.Div([
+        dbc.Spinner(
+            id='loading-summary-albums',
+            color='primary',
+            children=[
+                html.Div(
+                    id='div-summary-albums',
+                    className='div-summary-songs',
+                    children=albums
+                )],
+            type='default'
+        )])
+    return sum_albums
