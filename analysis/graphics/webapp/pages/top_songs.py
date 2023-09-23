@@ -125,7 +125,6 @@ tab_tabelle = dbc.Tab(
     label='Tabelle',
     # selected_className='custom-tab--selected',
 )
-"""
 
 tabs = dcc.Tabs(
     [
@@ -133,6 +132,16 @@ tabs = dcc.Tabs(
         # tab_tabelle
     ],
     parent_className='custom-tabs',
+    className='custom-tabs-container',
+)
+"""
+
+tabs = dbc.Tabs(
+    [
+        tab_normal,
+        # tab_tabelle
+    ],
+    # parent_className='custom-tabs',
     className='custom-tabs-container',
 )
 
@@ -263,7 +272,8 @@ def update_graph_theme(theme, start_date, end_date, btn_7d, btn_m, btn_y, radio_
 
     fig = px.bar(df_combined.head(amount), x='Song', y=y_axis, height=850,
                  title='Top Song Streams',
-                 color='Stream Count', color_continuous_scale=default_color_scale,
+                 color='Stream Count',
+                 # color_continuous_scale=default_color_scale,
                  custom_data=custom_data,
                  template=template_from_url(theme))
 
@@ -280,7 +290,7 @@ def update_graph_theme(theme, start_date, end_date, btn_7d, btn_m, btn_y, radio_
 
     [Input("stream-minutes-button-7d-s-minutes", "n_clicks"),
      Input('stream-minutes-button-month-s-minutes', 'n_clicks'),
-     Input('stream-minutes-button-year-s-minutes', 'n_clicks')
+     Input('stream-minutes-button-year-s-minutes', 'n_clicks'),
      ]
 )
 def button_events_graph(b7d, bmonth, byear):
