@@ -4,10 +4,7 @@ from dash import html, dcc, callback, Input, Output
 from dash_bootstrap_templates import ThemeChangerAIO, template_from_url
 
 from analysis.graphics.webapp.helpers.consts import *
-from analysis.graphics.webapp.helpers.df_filenames import *
-from analysis.graphics.webapp.helpers import summary_helpers
-from analysis.graphics.webapp.select_statements import *
-from analysis.graphics.webapp.df_files import dataframe_loader
+from analysis.graphics.webapp.df_files import dataframe_getter
 
 dash.register_page(__name__)
 
@@ -28,7 +25,8 @@ layout = html.Div(children=[
     Input(ThemeChangerAIO.ids.radio("all-themes"), "value")
 )
 def update_graph_theme(theme):
-    df_combined = summary_helpers.get_top_songs_df()
+    # df_combined = dataframe_helpers.get_top_songs_df()
+    df_combined = dataframe_getter.get_top_song_df()
     fig = px.sunburst(df_combined.head(n=1000), path=['Album', 'Song'], values='Stream Count',
                       title='Anzahl der Album-Streams nach Alben',
                       color='Stream Count', color_continuous_scale=default_color_scale,

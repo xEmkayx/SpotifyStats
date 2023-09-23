@@ -9,14 +9,16 @@ from dash import Dash
 from dash import html, DiskcacheManager
 from dash_bootstrap_templates import ThemeChangerAIO
 # import diskcache
-from analysis.graphics.webapp.df_files import dataframe_loader
+from analysis.graphics.webapp.df_files import dataframe_loader, dataframe_getter
 import asyncio
 
-import analysis.graphics.webapp.helpers.setting_functions
 from pathlib import Path
 import os
+from analysis.graphics.webapp.components.navbar import Navbar
 
-default_theme = dbc.themes.VAPOR
+from analysis.graphics.webapp.helpers import dataframe_helpers
+
+default_theme = dbc.themes.LUX
 pio.templates.default = "plotly_dark"
 
 available_themes = [
@@ -38,7 +40,10 @@ available_themes = [
 pages_folder = os.path.join(Path(__file__).parent, 'analysis/graphics/webapp/pages')
 assets_folder = os.path.join(Path(__file__).parent, 'analysis/graphics/webapp/assets')
 
-theme_change = ThemeChangerAIO(aio_id="all-themes")
+theme_change = ThemeChangerAIO(aio_id="all-themes",
+                               radio_props={
+                                   'value': default_theme
+                               })
 
 dbc_css = "https://cdn.jsdelivr.net/gh/AnnMarieW/dash-bootstrap-templates/dbc.min.css"
 
@@ -56,132 +61,6 @@ app = dash.Dash(__name__, use_pages=True, assets_ignore='./assets/*.css',
                 )
 
 
-dropdown_artists = html.Div(
-    [
-        dbc.DropdownMenu(
-            [
-                dbc.DropdownMenuItem(f'{page["name"]}', href=f'{page["path"]}')
-                for page in dash.page_registry.values() if str(page).__contains__('artist')
-            ],
-            label="Artists",
-        ),
-    ]
-)
-
-dropdown_albums = html.Div(
-    [
-        dbc.DropdownMenu(
-            [
-                dbc.DropdownMenuItem(f'{page["name"]}', href=f'{page["path"]}')
-                for page in dash.page_registry.values() if str(page).__contains__('album')
-            ],
-            label="Albums",
-        ),
-    ]
-)
-
-dropdown_songs = html.Div(
-    [
-        dbc.DropdownMenu(
-            [
-                dbc.DropdownMenuItem(f'{page["name"]}', href=f'{page["path"]}')
-                for page in dash.page_registry.values() if str(page).__contains__('song')
-            ],
-            label="Songs",
-        ),
-    ]
-)
-
-dropdown_sunbursts = html.Div(
-    [
-        dbc.DropdownMenu(
-            [
-                dbc.DropdownMenuItem(f'{page["name"]}', href=f'{page["path"]}')
-                for page in dash.page_registry.values() if str(page).__contains__('sunburst')
-            ],
-            label="Sunbursts",
-        ),
-    ]
-)
-
-dropdown_single = html.Div(
-    [
-        dbc.DropdownMenu(
-            [
-                dbc.DropdownMenuItem(f'{page["name"]}', href=f'{page["path"]}')
-                for page in dash.page_registry.values() if str(page).__contains__('single')
-            ],
-            label="Single",
-        ),
-    ]
-)
-
-dropdown_line = html.Div(
-    [
-        dbc.DropdownMenu(
-            [
-                dbc.DropdownMenuItem(f'{page["name"]}', href=f'{page["path"]}')
-                for page in dash.page_registry.values() if str(page).__contains__('line')
-            ],
-            label="Line charts",
-        ),
-    ]
-)
-
-dropdown_bar = html.Div(
-    [
-        dbc.DropdownMenu(
-            [
-                dbc.DropdownMenuItem(f'{page["name"]}', href=f'{page["path"]}')
-                for page in dash.page_registry.values() if str(page).__contains__('bar')
-            ],
-            label="Bar charts",
-        ),
-    ]
-)
-
-dropdown_all = html.Div(
-    [
-        dbc.DropdownMenu(
-            [
-                dbc.DropdownMenuItem(f'{page["name"]}', href=f'{page["path"]}')
-                for page in dash.page_registry.values()
-            ],
-            label="All",
-        ),
-    ]
-)
-
-settings = html.Div(
-    [
-        dbc.DropdownMenu(
-            [
-                dbc.DropdownMenuItem(f'{page["name"]}', href=f'{page["path"]}')
-                for page in dash.page_registry.values() if str(page).__contains__('settings')
-            ],
-            label='Settings'
-        ),
-    ]
-)
-
-navbar = dbc.NavbarSimple(
-    children=[
-        dbc.NavItem(settings),
-        dbc.NavItem(dropdown_all),
-        dbc.NavItem(dropdown_single),
-        dbc.NavItem(dropdown_songs),
-        dbc.NavItem(dropdown_artists),
-        dbc.NavItem(dropdown_albums),
-        dbc.NavItem(dropdown_sunbursts),
-        dbc.NavItem(dropdown_line),
-        dbc.NavItem(dropdown_bar),
-    ],
-    brand="Spotify Stats",  # NavbarSimple
-    brand_href="#",
-    color="primary",
-    dark=True,
-)
-
 button_group = dbc.ButtonGroup(
     [
         dbc.Button("Left", color="danger", outline=True),
@@ -189,6 +68,8 @@ button_group = dbc.ButtonGroup(
         dbc.Button("Right", color="success", outline=True),
     ]
 )
+
+navbar = Navbar(dash.page_registry.values())
 
 app.layout = dbc.Container(
     [navbar, theme_change, dash.page_container], fluid=True, className="dbc"  # theme_toggle
@@ -198,10 +79,11 @@ app.layout = dbc.Container(
 def main(reload_df_on_start: bool = True):
     # print('Starting webapp...')
     if reload_df_on_start:
-        analysis.graphics.webapp.helpers.setting_functions.reset_df()
+        dataframe_getter.reload_dfs()
+        # analysis.graphics.webapp.helpers.setting_functions.reset_df()
     app.run(debug=True, threaded=True)
 
 
 if __name__ == '__main__':
-    asyncio.run(dataframe_loader.init())
+    dataframe_helpers.load_default_df()
     threading.Thread(target=main(False)).start()

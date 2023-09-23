@@ -24,7 +24,7 @@ class ArtistSummary:
     streamed_amount: int = 0
     streamed_minutes: int = 0
 
-    def __init__(self, artist_id, artist_name, artist_image, streamed_amount = 0, streamed_minutes = 0):
+    def __init__(self, artist_id, artist_name, artist_image, streamed_amount=0, streamed_minutes=0):
         self.artist_id = artist_id
         self.artist_name = artist_name
         self.artist_image = artist_image
@@ -40,7 +40,7 @@ class AlbumSummary:
     streamed_amount: int = 0
     streamed_minutes: int = 0
 
-    def __init__(self, album_id, album_name, album_artist, album_image, streamed_amount = 0, streamed_minutes = 0):
+    def __init__(self, album_id, album_name, album_artist, album_image, streamed_amount=0, streamed_minutes=0):
         self.album_id = album_id
         self.album_name = album_name
         self.album_artist = album_artist

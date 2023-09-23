@@ -1,6 +1,6 @@
 from analysis.graphics.webapp.helpers.df_filenames import *
 import pandas as pd
-from analysis.graphics.webapp.helpers import setting_functions
+from analysis.graphics.webapp.helpers import setting_functions # , dataframe_helpers
 
 df = pd.read_csv(fr'{df_common_path}\{fn_df_allrounder}.csv')
 
@@ -18,3 +18,7 @@ def reload_dataframe():
 async def init():
     global df
     df = pd.read_csv(fr'{df_common_path}\{fn_df_allrounder}.csv')
+
+
+def reload_dfhelper_dataframes():
+    pass

@@ -1,5 +1,6 @@
 import time
 from datetime import date, datetime, timedelta
+from analysis.graphics.webapp.helpers.consts import TOMORROW_DATE
 # import datetime
 
 
@@ -14,7 +15,7 @@ def get_7days():
     delta = timedelta(days=7)
     days_ago = datetime.now() - delta
     start_date = f'{days_ago.year}-{days_ago.month}-{days_ago.day}'
-    end_date = str(date(datetime.now().year, datetime.now().month, datetime.now().day + 1))
+    end_date = str(TOMORROW_DATE)
     # print(f'7d - {start_date}, {end_date}')
     return start_date, end_date
 
@@ -23,7 +24,7 @@ def get_last_month():
     delta = timedelta(days=31)
     days_ago = datetime.now() - delta
     start_date = f'{days_ago.year}-{days_ago.month}-{days_ago.day}'
-    end_date = str(date(datetime.now().year, datetime.now().month, datetime.now().day + 1))
+    end_date = str(TOMORROW_DATE)
     # print(f'month - {start_date}, {end_date}')
 
     return start_date, end_date
@@ -33,7 +34,7 @@ def get_last_year():
     delta = timedelta(days=365)
     days_ago = datetime.now() - delta
     start_date = f'{days_ago.year}-{days_ago.month}-{days_ago.day}'
-    end_date = str(date(datetime.now().year, datetime.now().month, datetime.now().day + 1))
+    end_date = str(TOMORROW_DATE)
 
     # print(f'year - {start_date}, {end_date}')
     return start_date, end_date
@@ -41,7 +42,7 @@ def get_last_year():
 
 def get_standard_time():
     start_date = f'{datetime.now().year}-{datetime.now().month}-{datetime.now().day}'
-    end_date = str(date(datetime.now().year, datetime.now().month, datetime.now().day + 1))
+    end_date = str(TOMORROW_DATE)
 
     return start_date, end_date
 

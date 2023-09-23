@@ -4,25 +4,14 @@ from dash import html, dcc, callback, Input, Output
 from dash_bootstrap_templates import ThemeChangerAIO, template_from_url
 import dash_bootstrap_components as dbc
 
+from analysis.graphics.webapp.helpers import dataframe_helpers
 from analysis.graphics.webapp.helpers.consts import *
 from analysis.graphics.webapp.select_statements import *
-from analysis.graphics.webapp.df_files import dataframe_loader
+from analysis.graphics.webapp.df_files import dataframe_loader, dataframe_getter
 
 dash.register_page(__name__)
 
-# df = pd.read_csv(fr'{df_common_path}\{fn_df_allrounder}.csv')
-df = dataframe_loader.get_default_dataframe()
-
-gr = df.groupby('Played at').agg(
-    {'Song-ID': 'first', 'Song': 'first', 'Artist': ', '.join, 'Artist-ID': ', '.join,
-     'Album': 'first', 'Album-ID': 'first'})
-
-counted = gr.value_counts('Song-ID').rename({1: 'Song-ID', 2: 'Stream Count'}).sort_index().reset_index()
-counted.set_axis(['Song-ID', 'Stream Count'], axis=1, inplace=True)
-
-rest = gr.reset_index().drop('Played at', axis=1).drop_duplicates('Song-ID').sort_values('Song-ID')
-
-df_combined = pd.merge(counted, rest).sort_values('Stream Count', ascending=False)
+# df_combined = dataframe_helpers.get_top_songs_df()
 
 graph = dcc.Graph(
     id='single-albums-bar'
@@ -117,6 +106,7 @@ html.Div(className='container-single',
     ),                 
 """
 
+
 @callback(
     Output('single-albums-bar', 'figure'),
     Input('inp-album-name', 'value'),
@@ -126,14 +116,17 @@ html.Div(className='container-single',
 )
 def update_graph(alb_name, limit, rbvalue, theme):
     alb_name = str(alb_name)
+    df_combined = dataframe_getter.get_top_song_df()
+
     # TODO: REGEX BUTTON
     if rbvalue == 1:
-        df_filtered = df_combined[df_combined['Album'].str.contains(str(alb_name), case=False)].head(n=limit)
+        df_filter = 'Album'
     elif rbvalue == 2:
-        df_filtered = df_combined[df_combined['Album-ID'].str.contains(str(alb_name), case=False)].head(n=limit)
+        df_filter = 'Album-ID'
     else:
-        df_filtered = df_combined[df_combined['Album'].str.contains(str(alb_name), case=False)].head(n=limit)
+        df_filter = 'Album'
 
+    df_filtered = df_combined[df_combined[df_filter].str.contains(str(alb_name), case=False)].head(n=limit)
     single_album_barchart = px.bar(df_filtered, y='Song', x='Stream Count',
                                    title=f'Titel vom Album "{alb_name}"', height=1000,
                                    # text_auto='.2s',
