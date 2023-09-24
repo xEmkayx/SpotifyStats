@@ -1,5 +1,6 @@
 import dash
 import dash_bootstrap_components as dbc
+import pandas as pd
 from dash import html, dcc, callback, Input, Output, DiskcacheManager
 from dash_bootstrap_templates import ThemeChangerAIO, template_from_url
 
@@ -7,13 +8,15 @@ from analysis.graphics.webapp.components.StreamSortSwitchButton import StreamSor
 from analysis.graphics.webapp.components.create_playlist_button import CreatePlaylistButton
 from analysis.graphics.webapp.components.selection_box import SelectionBox, B7D_NAME, BMONTH_NAME, BYEAR_NAME
 from analysis.graphics.webapp.helpers import summary_helpers, name_helpers
+from analysis.graphics.webapp.helpers.consts import DATAFRAME_STORE_ID
 from analysis.graphics.webapp.helpers.time_functions import *
 from analysis.graphics.webapp.helpers import consts
 from spotify_scripts import playlist_creator
 
 dash.register_page(__name__)
 
-_, onscreen_songs = summary_helpers.init_songs(onscreen_songs=[])
+# _, onscreen_songs = summary_helpers.init_songs(onscreen_songs=[])
+onscreen_songs = []
 
 current_filename = name_helpers.get_current_file_name(__file__)
 sb = SelectionBox(current_filename)
@@ -107,7 +110,8 @@ def button_events_graph(b7d, bmonth, byear):
 @callback(
     Output('summary-content-div', 'children'),
 
-    [Input(datepicker_id, 'start_date'),
+    [Input(DATAFRAME_STORE_ID, 'data'),
+     Input(datepicker_id, 'start_date'),
      Input(datepicker_id, 'end_date'),
      Input(input_id, 'value'),
      Input(streamed_by_buttons_id, "value"),
@@ -115,7 +119,8 @@ def button_events_graph(b7d, bmonth, byear):
      Input('summary-tabs', 'active_tab')
      ],
 )
-def update_tabs(start_date, end_date, amount, radio_values, selected_tab):
+def update_tabs(df_store, start_date, end_date, amount, radio_values, selected_tab):
+    df = pd.DataFrame(df_store)
     sorted_by_minutes = False
     if radio_values == 1:
         sorted_by_minutes = False
@@ -126,11 +131,11 @@ def update_tabs(start_date, end_date, amount, radio_values, selected_tab):
 
     match selected_tab:
         case 'tab-artists-summary':
-            t = summary_helpers.init_artists(start_date, end_date, amount)
+            t = summary_helpers.init_artists(df, start_date, end_date, amount)
         case 'tab-albums-summary':
-            t = summary_helpers.init_albums(start_date, end_date, amount)
+            t = summary_helpers.init_albums(df, start_date, end_date, amount)
         case 'tab-songs-summary' | _:
-            t, onscreen_songs = summary_helpers.init_songs(start_date, end_date, amount, sorted_by_minutes)
+            t, onscreen_songs = summary_helpers.init_songs(df, start_date, end_date, amount, sorted_by_minutes)
 
     # return songs, artists, albums
     return t

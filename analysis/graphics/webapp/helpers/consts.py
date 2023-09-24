@@ -24,3 +24,4 @@ color_scales = ['aggrnyl', 'agsunset',
                 ]
 
 TOMORROW_DATE = date.today() + timedelta(days=1)
+DATAFRAME_STORE_ID = 'store-dataframe'

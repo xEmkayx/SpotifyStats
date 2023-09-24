@@ -1,6 +1,9 @@
 """
     Helper functions for the summary page
 """
+import pandas as pd
+
+from analysis.graphics.webapp.df_files import ndf_helper
 from analysis.graphics.webapp.helpers import dataframe_helpers
 from analysis.graphics.webapp.helpers import summary_cards, time_functions
 from datetime import date, datetime
@@ -15,19 +18,27 @@ spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=CLIENT_ID, client_
                                                     redirect_uri=REDIRECT_URI, scope=''))
 
 
-def get_top_songs_cards(start_date: str = str(date(2010, 1, 1)), end_date: str = str(date.today()),
+def get_top_songs_cards(df: pd.DataFrame, start_date: str = str(date(2010, 1, 1)), end_date: str = str(date.today()),
                         return_amount: int = 10, sorted_by_mins: bool = False):
     """
 
+    :param df:
     :param start_date:
     :param end_date:
     :param return_amount: how many rows shall be returned; 0 for all rows
     :param sorted_by_mins:
     :return:
     """
+    df_top_x = ndf_helper.get_top_songs_df(df=df,
+                                           start_date=start_date,
+                                           end_date=end_date,
+                                           sorted_by_mins=sorted_by_mins)\
+        .head(return_amount)
+    """
     df_top_x = dataframe_helpers.get_top_songs_df(start_date=start_date, end_date=end_date,
                                                   sorted_by_mins=sorted_by_mins) \
         .head(return_amount)
+    """
 
     song_card_list: list[summary_cards.SongSummary] = []
 
@@ -66,7 +77,7 @@ def get_song_image(song_id: str):
     return image_link
 
 
-def get_top_artists_cards(start_date: str = str(date(2010, 1, 1)), end_date: str = str(date.today()),
+def get_top_artists_cards(df: pd.DataFrame, start_date: str = str(date(2010, 1, 1)), end_date: str = str(date.today()),
                           return_amount: int = 10):
     """
     df = dataframe_loader.get_default_dataframe()
@@ -78,7 +89,8 @@ def get_top_artists_cards(start_date: str = str(date(2010, 1, 1)), end_date: str
     df_sorted.rename({1: 'Artist', 2: 'Artist-ID', 3: 'Stream Count'})
     df_sorted.set_axis(['Artist', 'Artist-ID', 'Stream Count'], axis=1, inplace=True)
     """
-    df_sorted = dataframe_helpers.get_top_artists(start_date=start_date, end_date=end_date)
+    # df_sorted = dataframe_helpers.get_top_artists(start_date=start_date, end_date=end_date)
+    df_sorted = ndf_helper.get_top_artists(df=df, start_date=start_date, end_date=end_date)
     df_top_x = df_sorted.head(return_amount)
 
     artist_card_list: list[summary_cards.ArtistSummary] = []
@@ -108,7 +120,7 @@ def get_artist_image(artist_id: str):
         return 'https://vectorified.com/images/no-profile-picture-icon-21.jpg'
 
 
-def get_top_album_cards(start_date: str = str(date(2010, 1, 1)), end_date: str = str(date.today()),
+def get_top_album_cards(df: pd.DataFrame, start_date: str = str(date(2010, 1, 1)), end_date: str = str(date.today()),
                         return_amount: int = 10):
     """
     df = dataframe_loader.get_default_dataframe()
@@ -123,7 +135,8 @@ def get_top_album_cards(start_date: str = str(date(2010, 1, 1)), end_date: str =
     rest = gr.reset_index().drop('Played at', axis=1).drop_duplicates('Album-ID').sort_values('Album-ID')
     df_combined = pd.merge(counted, rest).sort_values('Stream Count', ascending=False)
     """
-    df_combined = dataframe_helpers.get_top_albums(start_date=start_date, end_date=end_date)
+    # df_combined = dataframe_helpers.get_top_albums(start_date=start_date, end_date=end_date)
+    df_combined = ndf_helper.get_top_albums(df=df, start_date=start_date, end_date=end_date)
     df_top_x = df_combined.head(return_amount)
 
     album_card_list: list[summary_cards.AlbumSummary] = []
@@ -151,7 +164,7 @@ def get_album_image(album_id: str):
     return img_link
 
 
-def init_songs(start_date: str = str(date(datetime.now().year, 1, 1)),
+def init_songs(df: pd.DataFrame, start_date: str = str(date(datetime.now().year, 1, 1)),
                end_date: str = str(date(datetime.now().year, datetime.now().month, datetime.now().day)),
                amount: int = 10, sorted_by_minutes: bool = False, onscreen_songs: list = None):
     if onscreen_songs is None:
@@ -161,7 +174,7 @@ def init_songs(start_date: str = str(date(datetime.now().year, 1, 1)),
     onscreen_songs.clear()
 
     for idx, i in enumerate(
-            get_top_songs_cards(start_date=start_date, end_date=end_date, return_amount=amount,
+            get_top_songs_cards(df=df, start_date=start_date, end_date=end_date, return_amount=amount,
                                 sorted_by_mins=sorted_by_minutes)):
         s_id = i.song_id
         onscreen_songs.append(s_id)
@@ -205,12 +218,13 @@ def init_songs(start_date: str = str(date(datetime.now().year, 1, 1)),
 
 ##############################
 
-def init_artists(start_date: str = str(date(datetime.now().year, 1, 1)),
+def init_artists(df: pd.DataFrame, start_date: str = str(date(datetime.now().year, 1, 1)),
                  end_date: str = str(date(datetime.now().year, datetime.now().month, datetime.now().day)),
                  amount: int = 10):
     artists = []
     artists_wrapper = []
-    for i in get_top_artists_cards(start_date=start_date, end_date=end_date, return_amount=amount):
+    # for i in get_top_artists_cards(start_date=start_date, end_date=end_date, return_amount=amount):
+    for i in get_top_artists_cards(df=df, start_date=start_date, end_date=end_date, return_amount=amount):
         wr = html.Li(
             children=[
                 html.Img(src=i.artist_image, alt='https://vectorified.com/images/no-profile-picture-icon-21.jpg'),
@@ -244,12 +258,13 @@ def init_artists(start_date: str = str(date(datetime.now().year, 1, 1)),
 #############################
 
 
-def init_albums(start_date: str = str(date(datetime.now().year, 1, 1)),
+def init_albums(df: pd.DataFrame, start_date: str = str(date(datetime.now().year, 1, 1)),
                 end_date: str = str(date(datetime.now().year, datetime.now().month, datetime.now().day)),
                 amount: int = 10):
     albums = []
     albums_wrapper = []
-    for i in get_top_album_cards(start_date=start_date, end_date=end_date, return_amount=amount):
+    # for i in get_top_album_cards(start_date=start_date, end_date=end_date, return_amount=amount):
+    for i in get_top_album_cards(df=df, start_date=start_date, end_date=end_date, return_amount=amount):
         text = f'{i.album_artist} - {i.album_name}'
         wr = html.Li(
             children=[

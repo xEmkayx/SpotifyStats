@@ -10,7 +10,6 @@ from dash_bootstrap_templates import ThemeChangerAIO, template_from_url
 from analysis.graphics.webapp.helpers.time_functions import *
 from analysis.graphics.webapp.select_statements import *
 from analysis.graphics.webapp.helpers import dataframe_helpers
-from analysis.graphics.webapp.df_files import dataframe_loader, dataframe_getter
 from analysis.graphics.webapp.helpers.consts import *
 
 DATEPICKER_NAME = 'date-picker'

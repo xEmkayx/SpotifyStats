@@ -8,7 +8,7 @@ from analysis.graphics.webapp.components.single_type_selection import SingleType
 from analysis.graphics.webapp.helpers import dataframe_helpers
 from analysis.graphics.webapp.helpers.consts import *
 from analysis.graphics.webapp.select_statements import *
-from analysis.graphics.webapp.df_files import dataframe_loader, dataframe_getter
+from analysis.graphics.webapp.df_files import dataframe_loader, ndf_helper
 
 dash.register_page(__name__)
 
@@ -34,14 +34,17 @@ layout = html.Div(children=[
 
 @callback(
     Output('single-albums-bar', 'figure'),
+    Input(DATAFRAME_STORE_ID, 'data'),
     Input(input_name_id, 'value'),
     Input(input_limit_id, 'value'),
     Input(rb_selection_method_id, 'value'),
     Input(ThemeChangerAIO.ids.radio("all-themes"), "value"),
 )
-def update_graph(alb_name, limit, rbvalue, theme):
+def update_graph(df_store, alb_name, limit, rbvalue, theme):
     alb_name = str(alb_name)
-    df_combined = dataframe_getter.get_top_song_df()
+    df = pd.DataFrame(df_store)
+    df_combined = ndf_helper.get_top_songs_df(df)
+    # df_combined = dataframe_getter.get_top_song_df()
 
     # TODO: REGEX BUTTON
     if rbvalue == 1:

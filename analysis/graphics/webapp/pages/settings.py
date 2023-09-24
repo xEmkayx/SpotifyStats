@@ -1,11 +1,13 @@
 import dash
 import dash_bootstrap_components as dbc
+import pandas as pd
 from dash import html, callback, Input, Output, no_update
 
+from analysis.graphics.webapp.components.dataframe_store import DataframeStore
 from analysis.graphics.webapp.helpers import dataframe_helpers
+from analysis.graphics.webapp.helpers.consts import DATAFRAME_STORE_ID
 from analysis.graphics.webapp.helpers.setting_functions import *
-from analysis.graphics.webapp.df_files import dataframe_loader, dataframe_getter
-import asyncio
+from analysis.graphics.webapp.df_files import dataframe_loader
 
 dash.register_page(__name__)
 
@@ -47,27 +49,35 @@ layout = html.Div(
     ]
 )
 
-
+"""
 @callback(
     Output('reset-df', 'n_clicks'),
     Output('toast-settings', 'is_open'),
     Output('toast-settings', 'children'),
     Output('reset-label', 'children'),
-    [Input('reset-df', 'n_clicks')],
+    Output(DATAFRAME_STORE_ID, 'data'),
+    Input('reset-df', 'n_clicks'),
+    prevent_initial_call=True
 )
 def setting_actions(bclick):
     text = ''
+    sdf = pd.DataFrame(dash.callback_context.states[DATAFRAME_STORE_ID])
+    print(type(sdf))
+    print(sdf)
     if bclick != 0:
         # reset_df()
         # dataframe_loader.reload_dataframe()
         print('Started reloading DataFrame...')
-        dataframe_getter.reload_dfs()
+        # dataframe_getter.reload_dfs()
+        sdf = dataframe_loader.reload_df_store()
         print('Reloading DataFrame: Done')
         ret = True
         text = f'DataFrame neu geladen'
     elif bclick == 0:
         ret = no_update
     else:
+        sdf = dataframe_loader.reload_df_store()
         ret = True
 
-    return 0, ret, f'DataFrame neu geladen', text
+    return 0, ret, f'DataFrame neu geladen', text, sdf.to_dict('records')
+"""

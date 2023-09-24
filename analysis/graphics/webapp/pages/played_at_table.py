@@ -1,108 +1,37 @@
+from typing import Dict, Any
+
 import dash
 import dash_bootstrap_components as dbc
 from aio import ThemeChangerAIO
-from dash import html, dcc, callback, Input, Output
+from dash import html, dcc, callback, Input, Output, State
 
-from analysis.graphics.webapp.helpers import dataframe_helpers
+from analysis.graphics.webapp.components.StreamSortSwitchButton import StreamSortSwitchButton
+from analysis.graphics.webapp.components.create_playlist_button import CreatePlaylistButton
+from analysis.graphics.webapp.components.selection_box import SelectionBox, B7D_NAME, BMONTH_NAME, BYEAR_NAME
+from analysis.graphics.webapp.components.streamed_time import StreamedTime
+from analysis.graphics.webapp.helpers import dataframe_helpers, name_helpers
 from analysis.graphics.webapp.helpers.time_functions import *
 
 from analysis.graphics.webapp.helpers.df_filenames import *
 from analysis.graphics.webapp.select_statements import *
-from analysis.graphics.webapp.df_files import dataframe_loader, dataframe_getter
+from analysis.graphics.webapp.df_files import dataframe_loader, ndf_helper
 from analysis.graphics.webapp.helpers.consts import *
 
 dash.register_page(__name__)
 
-"""
-df = dataframe_getter.get_default_df()
-theme_change = ThemeChangerAIO(aio_id="theme")
+current_filename = name_helpers.get_current_file_name(__file__)
+sb = SelectionBox(current_filename)
+datepicker_id = sb.get_datepicker_id()
+b_ids: dict[Any, Any] = sb.get_buttons_ids()
+b7d_id = b_ids[B7D_NAME]
+bmonth_id = b_ids[BMONTH_NAME]
+byear_id = b_ids[BYEAR_NAME]
+input_id = sb.get_input_id()
 
-gr = df.groupby('Played at').agg(
-    {'Song-ID': 'first', 'Song': 'first', 'Artist': ', '.join, 'Artist-ID': ', '.join,
-     'Album': 'first', 'Album-ID': 'first'})
+playlist_button = CreatePlaylistButton(current_filename)
+playlist_button_id = playlist_button.get_id()
 
-gr = gr.reset_index()[::-1]
-"""
-
-datepicker = dcc.DatePickerRange(
-    id='played-at-table-date-picker',
-    min_date_allowed=date(2010, 1, 1),
-    max_date_allowed=TOMORROW_DATE,  # date(2022, 12, 12),  #
-    initial_visible_month=date.today(),  # date(2022, 11, 1),  #
-    end_date=TOMORROW_DATE,
-    start_date=date(datetime.now().year, 1, 1)
-)
-
-button_7d = dbc.Button(
-    'Letzte 7 Tage',
-    id='played-at-table-button-7d-s-minutes',
-    outline=True,
-    color='primary',
-    n_clicks=0
-)
-
-button_month = dbc.Button(
-    'Letzter Monat',
-    id='played-at-table-button-month-s-minutes',
-    outline=True,
-    color='primary',
-    n_clicks=0
-)
-
-button_year = dbc.Button(
-    'Letztes Jahr',
-    id='played-at-table-button-year-s-minutes',
-    outline=True,
-    color='primary',
-    n_clicks=0
-)
-
-buttons = dbc.ButtonGroup(
-    id='btn-group-played-at-table',
-    children=[
-        button_7d,
-        button_month,
-        button_year
-    ]
-)
-
-hoerzeit = html.Div(
-    id='hoerzeit-table'
-)
-
-stream_count = html.Div(
-    id='stream-count-table'
-)
-
-hz_neu = html.Center(
-    html.Div(
-        id='hz-table',
-        className='hz-container',
-        children=[
-            html.Div(
-                className='date',
-                id='sm-days-table'
-            ),
-            html.Label('D', className='date-text'),
-            html.Div(
-                className='date',
-                id='hours-sm-table'
-            ),
-            html.Label('H', className='date-text'),
-            html.Div(
-                className='date',
-                id='sm-minutes-table'
-            ),
-            html.Label('M', className='date-text'),
-            html.Div(
-                className='date',
-                id='sm-seconds-table'
-            ),
-            html.Label('S', className='date-text', style={'margin-right': '10px'}),
-        ]
-
-    )
-)
+streamed_time = StreamedTime(current_filename)
 
 # table = dbc.Table.from_dataframe(gr.head(n=1000), striped=True, bordered=True, hover=True)
 table = dbc.Table(id='played-at-table-table')
@@ -111,28 +40,24 @@ layout = html.Div(
         html.H1(
             ['Stream History']
         ),
-        datepicker,
+        sb.render(),
         html.Br(),
-        buttons,
-        html.Br(),
-        hoerzeit,
-        stream_count,
-        hz_neu,
+        streamed_time.render(),
         table,
     ]
 )
 
 
 @callback(
-    Output('played-at-table-date-picker', 'start_date'),
-    Output('played-at-table-date-picker', 'end_date'),
-    Output('played-at-table-button-7d-s-minutes', 'n_clicks'),
-    Output('played-at-table-button-month-s-minutes', 'n_clicks'),
-    Output('played-at-table-button-year-s-minutes', 'n_clicks'),
+    Output(datepicker_id, 'start_date'),
+    Output(datepicker_id, 'end_date'),
+    Output(b7d_id, 'n_clicks'),
+    Output(bmonth_id, 'n_clicks'),
+    Output(byear_id, 'n_clicks'),
 
-    [Input("played-at-table-button-7d-s-minutes", "n_clicks"),
-     Input('played-at-table-button-month-s-minutes', 'n_clicks'),
-     Input('played-at-table-button-year-s-minutes', 'n_clicks')
+    [Input(b7d_id, "n_clicks"),
+     Input(bmonth_id, 'n_clicks'),
+     Input(byear_id, 'n_clicks')
      ]
 )
 def button_events_graph(b7d, bmonth, byear):
@@ -153,19 +78,25 @@ def button_events_graph(b7d, bmonth, byear):
 
 @callback(
     Output('played-at-table-table', 'children'),
-    Output('hoerzeit-table', 'children'),
-    Output('stream-count-table', 'children'),
-    Output('sm-days-table', 'children'),
-    Output('hours-sm-table', 'children'),
-    Output('sm-minutes-table', 'children'),
-    Output('sm-seconds-table', 'children'),
+    Output(streamed_time.stream_time_text_id, 'children'),
+    Output(streamed_time.total_streams_id, 'children'),
+    Output(streamed_time.days_id, 'children'),
+    Output(streamed_time.hours_id, 'children'),
+    Output(streamed_time.minutes_id, 'children'),
+    Output(streamed_time.seconds_id, 'children'),
 
-    Input('played-at-table-date-picker', 'start_date'),
-    Input('played-at-table-date-picker', 'end_date'),
+    Input(DATAFRAME_STORE_ID, 'data'),
+    Input(datepicker_id, 'start_date'),
+    Input(datepicker_id, 'end_date'),
     Input(ThemeChangerAIO.ids.radio("all-themes"), "value")
 )
-def update_graph_theme(start_date, end_date, theme):
-    df = dataframe_helpers.get_played_at_table(start_date=start_date, end_date=end_date)
+def update_graph_theme(df_store, start_date, end_date, theme):
+    # ndf = pd.DataFrame.from_dict(df_store)
+    ndf = pd.DataFrame(df_store)
+    # print('table')
+    # print(ndf)
+    df = ndf_helper.get_played_at_table(df=ndf, start_date=start_date, end_date=end_date)
+    # df = dataframe_helpers.get_played_at_table(start_date=start_date, end_date=end_date)
     """
     df['Played at'] = pd.to_datetime(df['Played at'], format='%Y-%m-%d %H:%M')
     print('played at df:')

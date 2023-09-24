@@ -1,10 +1,11 @@
 import dash
+import pandas as pd
 import plotly.express as px
 from dash import html, dcc, callback, Input, Output
 from dash_bootstrap_templates import ThemeChangerAIO, template_from_url
 
 from analysis.graphics.webapp.components.selection_box import SelectionBox, B7D_NAME, BMONTH_NAME, BYEAR_NAME
-from analysis.graphics.webapp.df_files import dataframe_loader, dataframe_getter
+from analysis.graphics.webapp.df_files import ndf_helper
 from analysis.graphics.webapp.helpers.time_functions import *
 import dash_bootstrap_components as dbc
 from analysis.graphics.webapp.helpers import dataframe_helpers, name_helpers
@@ -72,13 +73,15 @@ def button_events_graph(b7d, bmonth, byear):
 @callback(
     Output("all-artists-line", "figure"),
 
+    Input(DATAFRAME_STORE_ID, 'data'),
     Input(datepicker_id, 'start_date'),
     Input(datepicker_id, 'end_date'),
     Input(ThemeChangerAIO.ids.radio("all-themes"), "value"),
     Input(input_id, 'value')
 )
-def update_graph_theme(start_date, end_date, theme, amount):
-    ndf = dataframe_helpers.get_top_artists(start_date=start_date, end_date=end_date)
+def update_graph_theme(df_store, start_date, end_date, theme, amount):
+    df = pd.DataFrame(df_store)
+    ndf = ndf_helper.get_top_songs_df(df, start_date=start_date, end_date=end_date)
     # df = dataframe_getter.get_top_artist_df()
     # mask = dataframe_helpers.date_mask(start_date=start_date, end_date=end_date)
     # ndf = df.loc[mask]

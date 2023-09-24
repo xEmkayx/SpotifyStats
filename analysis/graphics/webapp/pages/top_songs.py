@@ -1,14 +1,14 @@
 import dash
 import dash_bootstrap_components as dbc
 import plotly.express as px
-from dash import html, dcc, callback, Input, Output
+from dash import html, dcc, callback, Input, Output, State
 from dash_bootstrap_templates import ThemeChangerAIO, template_from_url
 
 from analysis.graphics.webapp.components.streamed_time import StreamedTime
 from analysis.graphics.webapp.helpers.time_functions import *
 from analysis.graphics.webapp.select_statements import *
 from analysis.graphics.webapp.helpers import dataframe_helpers
-from analysis.graphics.webapp.df_files import dataframe_loader, dataframe_getter
+from analysis.graphics.webapp.df_files import dataframe_loader, ndf_helper
 from analysis.graphics.webapp.helpers.consts import *
 from analysis.graphics.webapp.components.StreamSortSwitchButton import StreamSortSwitchButton
 from analysis.graphics.webapp.components.create_playlist_button import CreatePlaylistButton
@@ -106,9 +106,10 @@ layout = html.Div(children=[
     Output(streamed_time.total_streams_id, 'children'),
 
     [  # Input('btn-group', 'submit'),
+        State(DATAFRAME_STORE_ID, 'data'),
         Input(ThemeChangerAIO.ids.radio("all-themes"), "value"),
-        Input(datepicker_id, 'start_date'),
-        Input(datepicker_id, 'end_date'),
+        State(datepicker_id, 'start_date'),
+        State(datepicker_id, 'end_date'),
         Input(b7d_id, "n_clicks"),
         Input(bmonth_id, 'n_clicks'),
         Input(byear_id, 'n_clicks'),
@@ -116,7 +117,7 @@ layout = html.Div(children=[
         Input(input_id, 'value')
     ],
 )
-def update_graph_theme(theme, start_date, end_date, btn_7d, btn_m, btn_y, radio_values, amount):
+def update_graph_theme(df_store, theme, start_date, end_date, btn_7d, btn_m, btn_y, radio_values, amount):
     btn_7d = btn_m = btn_y = 0
     custom_data = ['Song', 'Stream Count', 'Song-ID', 'Artist', 'Artist-ID', 'Album', 'Album-ID']
 
@@ -152,8 +153,14 @@ def update_graph_theme(theme, start_date, end_date, btn_7d, btn_m, btn_y, radio_
         # TODO: output der Methoden gettopsongsdf von helper und getter vergleichen; anzeigeprobleme nur bei
         # Methode von getter
 
+    df = pd.DataFrame(df_store)
+    df_combined = ndf_helper.get_top_songs_df(df, start_date=start_date, end_date=end_date,
+                                              sorted_by_mins=sorted_by_minutes)
+
+    """
     df_combined = dataframe_helpers.get_top_songs_df(start_date=start_date, end_date=end_date,
                                                      sorted_by_mins=sorted_by_minutes)
+    """
 
     stream_sum = pd.to_timedelta('00:' + df_combined["Song Length"]).sum()
     sum_conv = strfdelta(stream_sum, "{days} Tage, {hours} Stunden, {minutes} Minuten und {seconds} Sekunden")
