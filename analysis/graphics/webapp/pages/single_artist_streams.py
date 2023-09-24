@@ -3,7 +3,7 @@ import plotly.express as px
 from dash import html, dcc, callback, Input, Output
 from dash_bootstrap_templates import ThemeChangerAIO, template_from_url
 
-# from analysis.graphics.webapp.helpers import dataframe_helpers
+from analysis.graphics.webapp.components.single_type_selection import SingleTypeSelection
 from analysis.graphics.webapp.helpers.consts import *
 from analysis.graphics.webapp.helpers.df_filenames import *
 from analysis.graphics.webapp.select_statements import *
@@ -11,60 +11,19 @@ from analysis.graphics.webapp.df_files import dataframe_loader, dataframe_getter
 import dash_bootstrap_components as dbc
 
 dash.register_page(__name__)
-# df_combined = dataframe_helpers.get_top_songs_df()
-# df_combined = dataframe_helpers.get_top_songs_df()
-
-rbSelectionMethod = html.Div(
-    [
-        dbc.RadioItems(
-            id="radio-items-sart",
-            className="btn-group",
-            inputClassName="btn-check",
-            labelClassName="btn btn-outline-primary",
-            labelCheckedClassName="active",
-            options=[
-                {"label": "Artist Name", "value": 1},
-                {"label": "Artist ID", "value": 2},
-            ],
-            value=1,
-        )
-    ],
-    className="radio-group",
-)
-
-t_artist_name = dbc.Input(type='text',
-                          id='inp-artist',
-                          placeholder="Insert Artist here...",
-                          style={
-                              'width': '10%',
-                              'margin-left': '5px',
-                              'margin-right': '5px',
-                              'display': 'inline-block',
-                          }
-                          )
-
-t_limit = dbc.Input(type='number',
-                    id='inp-limit',
-                    value=20,
-                    # className='inp-summary',
-                    style={
-                        'width': '4%',
-                        'margin-left': '5px',
-                        'margin-right': '5px',
-                        'display': 'inline-block',
-                    }
-                    )
 
 graph = dcc.Graph(
     id='single-artists-line'
 )
 
+single_type_selection = SingleTypeSelection('artist')
+rb_selection_method_id = single_type_selection.rb_selection_method_id
+input_name_id = single_type_selection.input_name_id
+input_limit_id = single_type_selection.input_limit_id
+
 layout = html.Div(children=[
     html.H1(children='Single Artist Streams'),
-    t_artist_name,
-    t_limit,
-    html.Br(),
-    rbSelectionMethod,
+    single_type_selection.render(),
     html.Br(),
     dcc.Loading(
         id='load-single-artists',
@@ -75,9 +34,9 @@ layout = html.Div(children=[
 
 @callback(
     Output('single-artists-line', 'figure'),
-    Input('inp-artist', 'value'),
-    Input('inp-limit', 'value'),
-    Input('radio-items-sart', 'value'),
+    Input(input_name_id, 'value'),
+    Input(input_limit_id, 'value'),
+    Input(rb_selection_method_id, 'value'),
     Input(ThemeChangerAIO.ids.radio("all-themes"), "value"),
 )
 def update_graph(artist, limit, rbvalue, theme):

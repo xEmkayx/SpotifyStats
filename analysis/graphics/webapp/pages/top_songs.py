@@ -105,16 +105,16 @@ layout = html.Div(children=[
     Output(streamed_time.seconds_id, 'children'),
     Output(streamed_time.total_streams_id, 'children'),
 
-    Input(ThemeChangerAIO.ids.radio("all-themes"), "value"),
-    Input(datepicker_id, 'start_date'),
-    Input(datepicker_id, 'end_date'),
     [  # Input('btn-group', 'submit'),
+        Input(ThemeChangerAIO.ids.radio("all-themes"), "value"),
+        Input(datepicker_id, 'start_date'),
+        Input(datepicker_id, 'end_date'),
         Input(b7d_id, "n_clicks"),
         Input(bmonth_id, 'n_clicks'),
         Input(byear_id, 'n_clicks'),
-        Input(streamed_by_buttons_id, "value")
+        Input(streamed_by_buttons_id, "value"),
+        Input(input_id, 'value')
     ],
-    Input(input_id, 'value')
 )
 def update_graph_theme(theme, start_date, end_date, btn_7d, btn_m, btn_y, radio_values, amount):
     btn_7d = btn_m = btn_y = 0
