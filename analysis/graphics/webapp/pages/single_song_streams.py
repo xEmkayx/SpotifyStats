@@ -2,12 +2,9 @@ import dash
 import plotly.express as px
 from dash import html, dcc, callback, Input, Output
 from dash_bootstrap_templates import ThemeChangerAIO, template_from_url
-import dash_bootstrap_components as dbc
 
-from analysis.graphics.webapp.helpers import dataframe_helpers
+from analysis.graphics.webapp.components.single_type_selection import SingleTypeSelection
 from analysis.graphics.webapp.helpers.consts import *
-from analysis.graphics.webapp.helpers.df_filenames import *
-from analysis.graphics.webapp.select_statements import *
 from analysis.graphics.webapp.df_files import dataframe_loader, dataframe_getter
 
 dash.register_page(__name__)
@@ -15,64 +12,16 @@ dash.register_page(__name__)
 graph = dcc.Graph(
     id='single-song-bc'
 )
-"""
-rbSelectionMethod = dcc.RadioItems(
-    id='radio-items-ssong',
-    options=[
-        {'label': 'Song Name', 'value': 1},
-        {'label': 'Song ID', 'value': 2}
-    ],
-    value='Song Name',
-    labelStyle={'display': 'block'}
-)
-"""
-rbSelectionMethod = html.Div(
-    [
-        dbc.RadioItems(
-            id="radio-items-ssong",
-            className="btn-group",
-            inputClassName="btn-check",
-            labelClassName="btn btn-outline-primary",
-            labelCheckedClassName="active",
-            options=[
-                {"label": "Song Name", "value": 1},
-                {"label": "Song ID", "value": 2},
-            ],
-            value=1,
-        )
-    ],
-    className="radio-group",
-)
 
-t_song_name = dbc.Input(type='text',
-                        id='inp-song-name',
-                        placeholder="Insert Song here...",
-                        style={
-                            'width': '10%',
-                            'margin-left': '5px',
-                            'margin-right': '5px',
-                            'display': 'inline-block',
-                        }
-                        )
+single_type_selection = SingleTypeSelection('song')
+rb_selection_method_id = single_type_selection.rb_selection_method_id
+input_name_id = single_type_selection.input_name_id
+input_limit_id = single_type_selection.input_limit_id
 
-t_limit = dbc.Input(type='number',
-                    id='inp-limit',
-                    value=20,
-                    # className='inp-summary',
-                    style={
-                        'width': '4%',
-                        'margin-left': '5px',
-                        'margin-right': '5px',
-                        'display': 'inline-block',
-                    }
-                    )
 
 layout = html.Div(children=[
     html.H1(children='Single Song Streams'),
-    t_song_name,
-    t_limit,
-    html.Br(),
-    rbSelectionMethod,
+    single_type_selection.render(),
     html.Br(),
     dcc.Loading(
         id='load-single-song',
@@ -80,31 +29,12 @@ layout = html.Div(children=[
     ),
 ])
 
-"""
-html.Div(children=[
-        html.Div(
-            children=[
-                rbSelectionMethod,
-            ]
-        ),
-        html.Div(children=[
-            dcc.Input(type='text', id='inp-song-name'),
-        ]),
-        html.Div(children=[
-            dcc.Input(type='number', id='inp-limit', value=20),
-        ]),
-    ], style={
-        'padding': '20px',
-    }
-    ),
-"""
-
 
 @callback(
     Output('single-song-bc', 'figure'),
-    Input('inp-song-name', 'value'),
-    Input('inp-limit', 'value'),
-    Input('radio-items-ssong', 'value'),
+    Input(input_name_id, 'value'),
+    Input(input_limit_id, 'value'),
+    Input(rb_selection_method_id, 'value'),
     Input(ThemeChangerAIO.ids.radio("all-themes"), "value"),
 )
 def update_graph(s_name, limit, rbvalue, theme):
