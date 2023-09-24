@@ -8,8 +8,10 @@ import plotly.io as pio
 from dash import Dash
 from dash import html, DiskcacheManager
 from dash_bootstrap_templates import ThemeChangerAIO
+
+from analysis.graphics.webapp.components.dataframe_store import DataframeStore
 # import diskcache
-from analysis.graphics.webapp.df_files import dataframe_loader, dataframe_getter
+from analysis.graphics.webapp.df_files import dataframe_loader
 import asyncio
 
 from pathlib import Path
@@ -47,6 +49,8 @@ theme_change = ThemeChangerAIO(aio_id="all-themes",
 
 dbc_css = "https://cdn.jsdelivr.net/gh/AnnMarieW/dash-bootstrap-templates/dbc.min.css"
 
+store = DataframeStore()
+
 # cache = diskcache.Cache("./cache")
 # background_callback_manager = DiskcacheManager(cache)
 
@@ -72,18 +76,20 @@ button_group = dbc.ButtonGroup(
 navbar = Navbar(dash.page_registry.values())
 
 app.layout = dbc.Container(
-    [navbar, theme_change, dash.page_container], fluid=True, className="dbc"  # theme_toggle
+    [store.render(), navbar, theme_change, dash.page_container], fluid=True, className="dbc"  # theme_toggle
 )
 
 
 def main(reload_df_on_start: bool = True):
     # print('Starting webapp...')
     if reload_df_on_start:
-        dataframe_getter.reload_dfs()
+        _ = dataframe_loader.reload_df_store()
+        # dataframe_getter.reload_dfs()
         # analysis.graphics.webapp.helpers.setting_functions.reset_df()
     app.run(debug=True, threaded=True)
 
 
 if __name__ == '__main__':
-    dataframe_helpers.load_default_df()
+    # dataframe_helpers.load_default_df()
     threading.Thread(target=main(False)).start()
+    # main(False)

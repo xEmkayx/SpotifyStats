@@ -7,7 +7,7 @@ from analysis.graphics.webapp.helpers.consts import *
 from analysis.graphics.webapp.helpers import dataframe_helpers
 from analysis.graphics.webapp.helpers.df_filenames import *
 from analysis.graphics.webapp.select_statements import *
-from analysis.graphics.webapp.df_files import dataframe_loader, dataframe_getter
+from analysis.graphics.webapp.df_files import dataframe_loader, ndf_helper
 
 dash.register_page(__name__)
 
@@ -27,11 +27,15 @@ layout = html.Div(children=[
 
 @callback(
     Output('multifunction-sunburst', 'figure'),
+    Input(DATAFRAME_STORE_ID, 'data'),
     Input(ThemeChangerAIO.ids.radio("all-themes"), "value"),
 )
-def update_graph_theme(theme):
+def update_graph_theme(df_store, theme):
     # df_combined = dataframe_helpers.get_top_songs_df()
-    df_combined = dataframe_getter.get_top_song_df()
+    # df_combined = dataframe_getter.get_top_song_df()
+    df = pd.DataFrame(df_store)
+    df_combined = ndf_helper.get_top_songs_df(df)
+
     song_streams_plot = px.sunburst(df_combined.head(n=1000),
                                     path=['Artist', 'Album', 'Song'], values='Stream Count',
                                     title='Anzahl aller Song Streams',

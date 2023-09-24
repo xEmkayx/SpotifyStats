@@ -1,11 +1,13 @@
 import dash
+import pandas as pd
 import plotly.express as px
 from dash import html, dcc, callback, Input, Output
 from dash_bootstrap_templates import ThemeChangerAIO, template_from_url
 
+from analysis.graphics.webapp.components.dataframe_store import DataframeStore
 from analysis.graphics.webapp.components.single_type_selection import SingleTypeSelection
 from analysis.graphics.webapp.helpers.consts import *
-from analysis.graphics.webapp.df_files import dataframe_loader, dataframe_getter
+from analysis.graphics.webapp.df_files import ndf_helper
 
 dash.register_page(__name__)
 
@@ -18,6 +20,7 @@ rb_selection_method_id = single_type_selection.rb_selection_method_id
 input_name_id = single_type_selection.input_name_id
 input_limit_id = single_type_selection.input_limit_id
 
+# store = DataframeStore()
 
 layout = html.Div(children=[
     html.H1(children='Single Song Streams'),
@@ -32,13 +35,15 @@ layout = html.Div(children=[
 
 @callback(
     Output('single-song-bc', 'figure'),
+    Input('store-dataframe', 'data'),
     Input(input_name_id, 'value'),
     Input(input_limit_id, 'value'),
     Input(rb_selection_method_id, 'value'),
     Input(ThemeChangerAIO.ids.radio("all-themes"), "value"),
 )
-def update_graph(s_name, limit, rbvalue, theme):
-    df_combined = dataframe_getter.get_top_song_df()
+def update_graph(df_store, s_name, limit, rbvalue, theme):
+    df = pd.DataFrame(df_store)
+    df_combined = ndf_helper.get_top_songs_df(df)
 
     if rbvalue == 1:
         df_filter = 'Song'

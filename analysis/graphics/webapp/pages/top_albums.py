@@ -1,11 +1,12 @@
 import dash
+import pandas as pd
 import plotly.express as px
 from dash import html, dcc, callback, Input, Output
 from dash_bootstrap_templates import ThemeChangerAIO, template_from_url
 
 from analysis.graphics.webapp.components.selection_box import SelectionBox, B7D_NAME
 from analysis.graphics.webapp.components.selection_box import B7D_NAME, BMONTH_NAME, BYEAR_NAME
-from analysis.graphics.webapp.df_files import dataframe_getter
+from analysis.graphics.webapp.df_files import ndf_helper
 from analysis.graphics.webapp.helpers.consts import *
 from analysis.graphics.webapp.helpers.time_functions import *
 import dash_bootstrap_components as dbc
@@ -68,17 +69,16 @@ def button_events_graph(b7d, bmonth, byear):
 @callback(
     Output('album-streams-line', 'figure'),
 
+    Input(DATAFRAME_STORE_ID, 'data'),
     Input(datepicker_id, 'start_date'),
     Input(datepicker_id, 'end_date'),
     Input(ThemeChangerAIO.ids.radio("all-themes"), "value"),
     Input(input_id, 'value')
 )
-def update_graph_theme(start_date, end_date, theme, amount):
-    # df = dataframe_getter.get_top_album_df()
-    # mask = dataframe_helpers.date_mask(start_date=start_date, end_date=end_date)
-    # ndf = df.loc[mask]
+def update_graph_theme(df_store, start_date, end_date, theme, amount):
+    df = pd.DataFrame(df_store)
 
-    ndf = dataframe_helpers.get_top_albums(start_date=start_date, end_date=end_date)
+    ndf = ndf_helper.get_top_songs_df(df, start_date=start_date, end_date=end_date)
 
     all_albums_plot = px.bar(ndf.head(n=amount), x='Album', y="Stream Count", height=1000,  # markers=True,
                              title='Top Albums Streams',
