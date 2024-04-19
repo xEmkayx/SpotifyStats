@@ -1,38 +1,41 @@
 """
-    update all artist names in database that aren't encoded properly (not utf-8)
+    update all album names in database that aren't encoded properly (not utf-8)
 """
 import time
 
 import requests
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
-from tools.DBOperations import dboperations
+from backend.tools.db import dboperations
 from private.auth import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
 import traceback
 
 dbops = dboperations.DBOperations()
 desired_format = '%Y-%m-%d %H:%M:%S'
 
+# print(json.dumps(jf, indent=4))
 scope = 'user-library-read'
 
 spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=CLIENT_ID, client_secret=CLIENT_SECRET,
                                                     redirect_uri=REDIRECT_URI, scope=scope))
-# all_artists = dbops.select_from_table('artists', 'distinct artist_id, artist_name')
-all_artists = dbops.select_from_table('artists', 'distinct artist_id, artist_name',
-                                      r'artist_name LIKE "%\\\%"')
+
+all_albums = dbops.select_from_table('albums', 'distinct album_id, album_name',
+                                     r'album_name LIKE "%\\\%"')
+# all_albums = dbops.select_from_table('albums', 'distinct album_id, album_name')
+print(all_albums)
 
 
 def main():
     print(f'Started {__name__}')
-    for artist in all_artists:
+    for album in all_albums:
         tries = 0
         try:
-            artist_id = artist[0]
-            # artist_name = artist[1]
-            artist_name = spotify.artist(artist_id)['name']
-            dbops.update_artist_name(artist_id, artist_name)
+            album_id = album[0]
+            print(album_id)
+            album_name = spotify.album(album_id)['name']
+            dbops.update_album_name(album_id, album_name)
             time.sleep(0.1)
-            print(f'Updated: {artist_id} - {artist_name}')
+            print(f'{album_id} --- {album_name}')
 
         except requests.exceptions.ReadTimeout:
             if tries < 10:
@@ -44,7 +47,7 @@ def main():
                 exit()
 
         except:
-            print(f'Error: {artist_id} - {artist_name}')
+            print(f'Error: {album_id} - {album_name}')
             traceback.print_exc()
 
     dbops.close_all()
@@ -53,3 +56,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+    # id = '39C4T9TCMg6yjleEADxDq4'
+    # print(spotify.album(id))

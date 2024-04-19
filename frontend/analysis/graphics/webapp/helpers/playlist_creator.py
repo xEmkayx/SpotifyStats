@@ -1,14 +1,10 @@
-import json
-import logging
-import os.path
-import time
 from datetime import datetime
 from traceback import format_exc
 import spotipy
 from spotipy import SpotifyOAuth
 
 from private.auth import CLIENT_ID, REDIRECT_URI, CLIENT_SECRET, USERNAME
-from tools.important_values import *
+from backend.tools.important_values import *
 
 logging.basicConfig(
     level=log_level,

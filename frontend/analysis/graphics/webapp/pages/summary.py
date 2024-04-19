@@ -6,10 +6,9 @@ from dash import html, callback, Input, Output
 from frontend.analysis.graphics.webapp.components.stream_sort_switch_button import StreamSortSwitchButton
 from frontend.analysis.graphics.webapp.components.create_playlist_button import CreatePlaylistButton
 from frontend.analysis.graphics.webapp.components.selection_box import SelectionBox, B7D_NAME, BMONTH_NAME, BYEAR_NAME
-from frontend.analysis.graphics.webapp.helpers import name_helpers, summary_helpers
+from frontend.analysis.graphics.webapp.helpers import name_helpers, summary_helpers, playlist_creator
 from frontend.analysis.graphics.webapp.helpers.consts import DATAFRAME_STORE_ID
 from frontend.analysis.graphics.webapp.helpers.time_functions import *
-from spotify_scripts import playlist_creator
 
 dash.register_page(__name__)
 

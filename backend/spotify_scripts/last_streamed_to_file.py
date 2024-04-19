@@ -6,7 +6,7 @@ import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 
 from private.auth import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
-from tools.important_values import *
+from backend.tools.important_values import *
 
 logging.basicConfig(
     level=log_level,

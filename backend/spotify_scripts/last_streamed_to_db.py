@@ -1,22 +1,16 @@
-"""
-    Add all songs from a playlist to the database
-    (this is not an automated script. It's intended to be run manually.)
-"""
 import json
 import os.path
 import time
-import traceback
 from traceback import format_exc
 
 import mysql.connector
 import spotipy
 from spotipy import SpotifyOAuth
 
-from private.auth import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
-from tools import calculations
-from tools import last_streamed_methods as lsm
-from tools.DBOperations import dboperations
-from tools.important_values import *
+from private.auth import CLIENT_ID, REDIRECT_URI, CLIENT_SECRET
+from backend.tools import calculations, last_streamed_methods as lsm
+from backend.tools.db import dboperations
+from backend.tools.important_values import *
 
 logging.basicConfig(
     level=log_level,
@@ -25,35 +19,23 @@ logging.basicConfig(
     filename=log_filename
 )
 
-playlist_link = r'PLAYLIST_LINK'  # Insert playlist link here
-playlist_id = r'55dmRytawB4Hqzu4XfEqoJ'  # Insert playlist ID here
-
 scope = 'user-read-recently-played user-library-read playlist-read-private ' \
         'playlist-read-collaborative user-top-read user-read-currently-playing'
 
 
 def main():
-    offset = 0
-    ct = offset
     try:
         dbops = dboperations.DBOperations()
-
         spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=CLIENT_ID, client_secret=CLIENT_SECRET,
                                                             redirect_uri=REDIRECT_URI, scope=scope))
 
-        playlist_items = spotify.playlist_items(playlist_id=playlist_id, offset=offset)
-
-        try:
-            with open(r'../../temp_files/playlist_todb.json', 'w') as jf:
-                jf.write(json.dumps(playlist_items, indent=4))
-            logging.info(f'Wrote to playlist_todb.json')
-        except:
-            logging.error(f'Error while writing file:\n{format_exc()}')
-
-        with open('../../temp_files/playlist_todb.json', 'r') as f:
+        with open(last_streams_dir, 'r') as f:
             jf = json.load(f)
 
             for item in jf['items']:
+                played_at = json.dumps(item['played_at'])
+                played_at = lsm.format_played_at(played_at)
+
                 song_id = json.dumps(item['track']['id'])
                 song_id = lsm.clean_item(song_id)
 
@@ -74,10 +56,6 @@ def main():
 
                 song_length = json.dumps(item['track']['duration_ms'])
                 song_length = lsm.clean_item(song_length)
-
-                print(ct)
-                ct += 1
-                # print(f'ID: {song_id} -/- {artist_name} -- {song_name} /\\ {album_name}')
 
                 time.sleep(0.1)
                 song_length = calculations.ms_to_timestring(int(song_length))
@@ -111,7 +89,7 @@ def main():
                 val = (album_id, album_name)
                 try:
                     dbops.write_to_albums(val)
-                    logging.info(f'Wrote Album {val+[1]} with Album-ID {val[0]} to {albums_tab_name} table.')
+                    logging.info(f'Wrote Album {val + [1]} with Album-ID {val[0]} to {albums_tab_name} table.')
                 except mysql.connector.IntegrityError:
                     logging.error(f'Duplicate entry in {albums_tab_name} table for Album {val[1]} with '
                                   f'Album-ID {album_id}')
@@ -171,25 +149,31 @@ def main():
                         pass
                     time.sleep(0.1)
 
+                # songs in history -> stream_history
+                val = (played_at, song_id)
+                try:
+                    dbops.write_to_stream_history(val)
+                    logging.info(f'Wrote entry to artists_songs table for timestamp {played_at}')
+                except mysql.connector.IntegrityError:
+                    logging.error(f'Duplicate entry at stream_history with timestamp {played_at}')
+                    break
+
         try:
             os.remove(last_streams_dir)
-            logging.info(f'Removed playlist_todb file.')
+            logging.info(f'Removed last_streams file.')
         except FileNotFoundError:
             logging.error(f'An error occured while trying to remove the file:\n'
                           f'{format_exc()}')
         finally:
             dbops.close_all()
-            #dbops.mydb.close()
+            # dbops.mydb.close()
+        
 
     except FileNotFoundError:
-        logging.error(f'An error occured while trying to open the playlist_todb file:\n'
+        logging.error(f'An error occured while trying to open the {last_streams_name} file:\n'
                       f'{format_exc()}')
-
     except:
         logging.error(f'An error occured while running the script:\n{format_exc()}')
-        print('fehler', traceback.print_exception())
-    finally:
-        dbops.close_all()
 
 
 if __name__ == '__main__':

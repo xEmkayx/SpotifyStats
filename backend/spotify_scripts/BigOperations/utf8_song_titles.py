@@ -1,41 +1,44 @@
 """
-    update all album names in database that aren't encoded properly (not utf-8)
+    update all song names in database that aren't encoded properly (not utf-8)
 """
 import time
 
 import requests
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
-from tools.DBOperations import dboperations
+from backend.tools.db import dboperations
 from private.auth import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
-import traceback
+from traceback import format_exc
+from backend.tools.important_values import *
+
+logging.basicConfig(
+    level=log_level,
+    format=log_format,
+    datefmt=log_datefmt,
+    filename=log_filename
+)
 
 dbops = dboperations.DBOperations()
 desired_format = '%Y-%m-%d %H:%M:%S'
 
-# print(json.dumps(jf, indent=4))
 scope = 'user-library-read'
 
 spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=CLIENT_ID, client_secret=CLIENT_SECRET,
                                                     redirect_uri=REDIRECT_URI, scope=scope))
-
-all_albums = dbops.select_from_table('albums', 'distinct album_id, album_name',
-                                     r'album_name LIKE "%\\\%"')
-# all_albums = dbops.select_from_table('albums', 'distinct album_id, album_name')
-print(all_albums)
+all_songs = dbops.select_from_table('songs', 'distinct song_id, song_name',
+                                    r'song_name LIKE "%\\\%"')
 
 
 def main():
     print(f'Started {__name__}')
-    for album in all_albums:
+    for song in all_songs:
         tries = 0
         try:
-            album_id = album[0]
-            print(album_id)
-            album_name = spotify.album(album_id)['name']
-            dbops.update_album_name(album_id, album_name)
+            song_id = song[0]
+            song_name = spotify.track(song_id)['name']
+            dbops.update_song_name(song_id, song_name)
             time.sleep(0.1)
-            print(f'{album_id} --- {album_name}')
+            print(f'{song_id} --- {song_name}')
 
         except requests.exceptions.ReadTimeout:
             if tries < 10:
@@ -45,10 +48,8 @@ def main():
             else:
                 print('Exiting...')
                 exit()
-
         except:
-            print(f'Error: {album_id} - {album_name}')
-            traceback.print_exc()
+            logging.error(f'An error occured:\n{format_exc()}')
 
     dbops.close_all()
     print(f'{__name__}: Done')
@@ -56,5 +57,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-    # id = '39C4T9TCMg6yjleEADxDq4'
-    # print(spotify.album(id))

@@ -6,9 +6,9 @@ import mysql.connector
 # from tools import important_values as iv
 from multipledispatch import dispatch
 
+from backend.tools.important_values import *
 from private.connector_values import *
-from tools.errors.CustomExceptions import InvalidTupleLength
-from tools.important_values import *
+from backend.tools.errors.CustomExceptions import InvalidTupleLength
 
 
 class DBOperations:
