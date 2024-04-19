@@ -1,15 +1,6 @@
-from dash import html, dcc, callback, Input, Output
-from dash.development.base_component import Component
-
-import dash
 import dash_bootstrap_components as dbc
-import plotly.express as px
-from dash import html, dcc, callback, Input, Output
-from dash_bootstrap_templates import ThemeChangerAIO, template_from_url
+from dash import html, dcc
 
-from analysis.graphics.webapp.helpers.time_functions import *
-from analysis.graphics.webapp.select_statements import *
-from analysis.graphics.webapp.helpers import dataframe_helpers
 from analysis.graphics.webapp.helpers.consts import *
 
 DATEPICKER_NAME = 'date-picker'

@@ -1,5 +1,4 @@
-from datetime import date, datetime, timedelta
-# import datetime
+from datetime import date, timedelta
 
 default_color_scale = 'tealrose'
 color_scales = ['aggrnyl', 'agsunset',

@@ -4,10 +4,8 @@ from dash import html, dcc, callback, Input, Output
 from dash_bootstrap_templates import ThemeChangerAIO, template_from_url
 
 from analysis.graphics.webapp.helpers.consts import *
-from analysis.graphics.webapp.helpers.df_filenames import *
 from analysis.graphics.webapp.select_statements import *
-from analysis.graphics.webapp.df_files import dataframe_loader, ndf_helper
-from analysis.graphics.webapp.helpers import dataframe_helpers
+from analysis.graphics.webapp.df_files import ndf_helper
 
 dash.register_page(__name__)
 

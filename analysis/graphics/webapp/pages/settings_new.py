@@ -8,7 +8,7 @@ from dash_bootstrap_templates import ThemeChangerAIO, template_from_url
 from analysis.graphics.webapp.components.dataframe_store import DataframeStore
 from analysis.graphics.webapp.components.single_type_selection import SingleTypeSelection
 from analysis.graphics.webapp.helpers.consts import *
-from analysis.graphics.webapp.df_files import dataframe_loader, ndf_helper
+from analysis.graphics.webapp.df_files import dataframe_loader
 
 dash.register_page(__name__)
 

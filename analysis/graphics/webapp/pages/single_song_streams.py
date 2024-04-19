@@ -4,7 +4,6 @@ import plotly.express as px
 from dash import html, dcc, callback, Input, Output
 from dash_bootstrap_templates import ThemeChangerAIO, template_from_url
 
-from analysis.graphics.webapp.components.dataframe_store import DataframeStore
 from analysis.graphics.webapp.components.single_type_selection import SingleTypeSelection
 from analysis.graphics.webapp.helpers.consts import *
 from analysis.graphics.webapp.df_files import ndf_helper

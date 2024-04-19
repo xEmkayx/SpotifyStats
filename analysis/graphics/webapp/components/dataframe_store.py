@@ -1,6 +1,4 @@
-import dash
-from dash import html, dcc, callback, Input, Output
-import dash_bootstrap_components as dbc
+from dash import html, dcc
 import pandas as pd
 
 from analysis.graphics.webapp.helpers.consts import DATAFRAME_STORE_ID
@@ -27,5 +25,5 @@ def init_store(item_id):
 
 
 def get_default_df():
-    df = pd.read_csv(fr'{df_common_path}\{fn_df_allrounder}.csv')
+    df = pd.read_csv(fr'{df_common_path}\{fn_df_allrounder}.csv', index_col=[0])
     return df.to_dict('records')

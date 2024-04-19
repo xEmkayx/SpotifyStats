@@ -1,24 +1,16 @@
 # Run this app with `python app.py` and
 # visit http://127.0.0.1:8050/ in your web browser.
 import threading
-
 import dash
 import dash_bootstrap_components as dbc
 import plotly.io as pio
-from dash import Dash
-from dash import html, DiskcacheManager
 from dash_bootstrap_templates import ThemeChangerAIO
-
 from analysis.graphics.webapp.components.dataframe_store import DataframeStore
 # import diskcache
 from analysis.graphics.webapp.df_files import dataframe_loader
-import asyncio
-
 from pathlib import Path
 import os
 from analysis.graphics.webapp.components.navbar import Navbar
-
-from analysis.graphics.webapp.helpers import dataframe_helpers
 
 default_theme = dbc.themes.LUX
 pio.templates.default = "plotly_dark"
@@ -91,5 +83,5 @@ def main(reload_df_on_start: bool = True):
 
 if __name__ == '__main__':
     # dataframe_helpers.load_default_df()
-    threading.Thread(target=main(False)).start()
+    threading.Thread(target=main(True)).start()
     # main(False)

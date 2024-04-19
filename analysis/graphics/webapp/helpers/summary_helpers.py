@@ -4,15 +4,13 @@
 import pandas as pd
 
 from analysis.graphics.webapp.df_files import ndf_helper
-from analysis.graphics.webapp.helpers import dataframe_helpers
 from analysis.graphics.webapp.helpers import summary_cards, time_functions
 from datetime import date, datetime
 import spotipy
 from spotipy import SpotifyOAuth
 from private.auth import CLIENT_ID, REDIRECT_URI, CLIENT_SECRET
-from dash import html, dcc, callback, Input, Output, DiskcacheManager
+from dash import html
 import dash_bootstrap_components as dbc
-from analysis.graphics.webapp.helpers import name_helpers
 
 spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=CLIENT_ID, client_secret=CLIENT_SECRET,
                                                     redirect_uri=REDIRECT_URI, scope=''))

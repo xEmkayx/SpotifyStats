@@ -7,8 +7,7 @@ from dash_bootstrap_templates import ThemeChangerAIO, template_from_url
 from analysis.graphics.webapp.components.selection_box import SelectionBox, B7D_NAME, BMONTH_NAME, BYEAR_NAME
 from analysis.graphics.webapp.df_files import ndf_helper
 from analysis.graphics.webapp.helpers.time_functions import *
-import dash_bootstrap_components as dbc
-from analysis.graphics.webapp.helpers import dataframe_helpers, name_helpers
+from analysis.graphics.webapp.helpers import name_helpers
 from analysis.graphics.webapp.helpers.consts import *
 
 dash.register_page(__name__)

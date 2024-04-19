@@ -1,10 +1,4 @@
-from dash import html, dcc, callback, Input, Output
-from dash.development.base_component import Component
-
-import dash
-import dash_bootstrap_components as dbc
-import plotly.express as px
-from dash import html, dcc, callback, Input, Output
+from dash import html
 
 
 class StreamedTime:

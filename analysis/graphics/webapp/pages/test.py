@@ -1,9 +1,7 @@
 import dash
-import plotly.express as px
-from dash import html, dcc, callback, Input, Output
-from dash_bootstrap_templates import ThemeChangerAIO, template_from_url
+from dash import html
+from dash_bootstrap_templates import ThemeChangerAIO
 from analysis.graphics.webapp.components.selection_box import SelectionBox
-import os
 
 from analysis.graphics.webapp.helpers import name_helpers
 

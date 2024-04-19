@@ -1,13 +1,6 @@
 import dash
 import dash_bootstrap_components as dbc
-import pandas as pd
-from dash import html, callback, Input, Output, no_update
-
-from analysis.graphics.webapp.components.dataframe_store import DataframeStore
-from analysis.graphics.webapp.helpers import dataframe_helpers
-from analysis.graphics.webapp.helpers.consts import DATAFRAME_STORE_ID
-from analysis.graphics.webapp.helpers.setting_functions import *
-from analysis.graphics.webapp.df_files import dataframe_loader
+from dash import html
 
 dash.register_page(__name__)
 
