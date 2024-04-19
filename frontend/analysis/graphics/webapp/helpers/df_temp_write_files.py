@@ -3,8 +3,8 @@
     (good for slower PCs, such as raspberry pis)
 """
 
-from analysis.graphics.webapp.helpers.df_filenames import *
-from analysis.graphics.webapp.select_statements import *
+from frontend.analysis.graphics.webapp.helpers.df_filenames import *
+from frontend.analysis.graphics.webapp.select_statements import *
 
 
 def write_allrounder():

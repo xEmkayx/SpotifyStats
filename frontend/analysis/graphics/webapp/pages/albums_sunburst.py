@@ -4,8 +4,8 @@ import plotly.express as px
 from dash import html, dcc, callback, Input, Output
 from dash_bootstrap_templates import ThemeChangerAIO, template_from_url
 
-from analysis.graphics.webapp.helpers.consts import *
-from analysis.graphics.webapp.df_files import ndf_helper
+from frontend.analysis.graphics.webapp.df_files import ndf_helper
+from frontend.analysis.graphics.webapp.helpers.consts import *
 
 dash.register_page(__name__)
 

@@ -1,4 +1,4 @@
-from analysis.graphics.webapp.helpers.df_temp_write_files import write_allrounder
+from frontend.analysis.graphics.webapp.helpers.df_temp_write_files import write_allrounder
 
 
 def reset_df():

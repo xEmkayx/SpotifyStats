@@ -1,9 +1,9 @@
 import dash
 from dash import html
 from dash_bootstrap_templates import ThemeChangerAIO
-from analysis.graphics.webapp.components.selection_box import SelectionBox
+from frontend.analysis.graphics.webapp.components.selection_box import SelectionBox
 
-from analysis.graphics.webapp.helpers import name_helpers
+from frontend.analysis.graphics.webapp.helpers import name_helpers
 
 dash.register_page(__name__)
 

@@ -3,8 +3,8 @@
 """
 import pandas as pd
 
-from analysis.graphics.webapp.df_files import ndf_helper
-from analysis.graphics.webapp.helpers import summary_cards, time_functions
+from frontend.analysis.graphics.webapp.df_files import ndf_helper
+from frontend.analysis.graphics.webapp.helpers import summary_cards, time_functions
 from datetime import date, datetime
 import spotipy
 from spotipy import SpotifyOAuth

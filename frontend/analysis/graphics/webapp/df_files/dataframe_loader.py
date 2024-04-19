@@ -1,6 +1,7 @@
-from analysis.graphics.webapp.helpers.df_filenames import *
 import pandas as pd
-from analysis.graphics.webapp.helpers import df_temp_write_files  # , dataframe_helpers
+from frontend.analysis.graphics.webapp.helpers import df_temp_write_files
+from frontend.analysis.graphics.webapp.helpers.df_filenames import *
+
 
 # df = pd.read_csv(fr'{df_common_path}\{fn_df_allrounder}.csv')
 

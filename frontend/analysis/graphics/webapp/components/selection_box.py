@@ -1,7 +1,9 @@
+from datetime import datetime
+
 import dash_bootstrap_components as dbc
 from dash import html, dcc
 
-from analysis.graphics.webapp.helpers.consts import *
+from frontend.analysis.graphics.webapp.helpers.consts import *
 
 DATEPICKER_NAME = 'date-picker'
 INPUT_NAME = 'inp-amount'

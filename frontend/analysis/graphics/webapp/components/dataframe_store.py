@@ -1,8 +1,8 @@
 from dash import html, dcc
 import pandas as pd
 
-from analysis.graphics.webapp.helpers.consts import DATAFRAME_STORE_ID
-from analysis.graphics.webapp.helpers.df_filenames import *
+from frontend.analysis.graphics.webapp.helpers.consts import DATAFRAME_STORE_ID
+from frontend.analysis.graphics.webapp.helpers.df_filenames import *
 
 
 class DataframeStore:

@@ -1,6 +1,6 @@
 import time
 from datetime import datetime, timedelta
-from analysis.graphics.webapp.helpers.consts import TOMORROW_DATE
+from frontend.analysis.graphics.webapp.helpers.consts import TOMORROW_DATE
 
 
 def strfdelta(tdelta, fmt):

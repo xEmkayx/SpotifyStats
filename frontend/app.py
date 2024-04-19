@@ -5,12 +5,12 @@ import dash
 import dash_bootstrap_components as dbc
 import plotly.io as pio
 from dash_bootstrap_templates import ThemeChangerAIO
-from analysis.graphics.webapp.components.dataframe_store import DataframeStore
+from frontend.analysis.graphics.webapp.components.dataframe_store import DataframeStore
 # import diskcache
-from analysis.graphics.webapp.df_files import dataframe_loader
+from frontend.analysis.graphics.webapp.df_files import dataframe_loader
 from pathlib import Path
 import os
-from analysis.graphics.webapp.components.navbar import Navbar
+from frontend.analysis.graphics.webapp.components.navbar import Navbar
 
 default_theme = dbc.themes.LUX
 pio.templates.default = "plotly_dark"
@@ -83,5 +83,5 @@ def main(reload_df_on_start: bool = True):
 
 if __name__ == '__main__':
     # dataframe_helpers.load_default_df()
-    threading.Thread(target=main(True)).start()
+    threading.Thread(target=main(False)).start()
     # main(False)

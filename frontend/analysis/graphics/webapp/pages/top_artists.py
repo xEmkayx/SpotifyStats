@@ -4,11 +4,11 @@ import plotly.express as px
 from dash import html, dcc, callback, Input, Output
 from dash_bootstrap_templates import ThemeChangerAIO, template_from_url
 
-from analysis.graphics.webapp.components.selection_box import SelectionBox, B7D_NAME, BMONTH_NAME, BYEAR_NAME
-from analysis.graphics.webapp.df_files import ndf_helper
-from analysis.graphics.webapp.helpers.time_functions import *
-from analysis.graphics.webapp.helpers import name_helpers
-from analysis.graphics.webapp.helpers.consts import *
+from frontend.analysis.graphics.webapp.components.selection_box import SelectionBox, B7D_NAME, BMONTH_NAME, BYEAR_NAME
+from frontend.analysis.graphics.webapp.df_files import ndf_helper
+from frontend.analysis.graphics.webapp.helpers import name_helpers
+from frontend.analysis.graphics.webapp.helpers.consts import *
+from frontend.analysis.graphics.webapp.helpers.time_functions import *
 
 dash.register_page(__name__)
 
