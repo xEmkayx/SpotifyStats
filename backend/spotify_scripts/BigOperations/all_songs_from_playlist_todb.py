@@ -14,7 +14,7 @@ from spotipy import SpotifyOAuth
 
 from private.auth import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
 from backend.tools import calculations, last_streamed_methods as lsm
-from backend.tools.db import dboperations
+from common.db import dboperations
 from backend.tools.important_values import *
 
 logging.basicConfig(

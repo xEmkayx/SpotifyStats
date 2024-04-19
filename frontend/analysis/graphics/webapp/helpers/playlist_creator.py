@@ -4,14 +4,15 @@ import spotipy
 from spotipy import SpotifyOAuth
 
 from private.auth import CLIENT_ID, REDIRECT_URI, CLIENT_SECRET, USERNAME
-from backend.tools.important_values import *
+# todo: reimplement
+# from backend.tools.important_values import *
 
-logging.basicConfig(
-    level=log_level,
-    format=log_format,
-    datefmt=log_datefmt,
-    filename=log_filename
-)
+# logging.basicConfig(
+#     level=log_level,
+#     format=log_format,
+#     datefmt=log_datefmt,
+#     filename=log_filename
+# )
 
 scope = 'playlist-modify-public playlist-modify-private'
 
@@ -41,7 +42,9 @@ def create_playlist(song_ids: list, range: str):
             playlist = spotify.user_playlist_create(user=USERNAME, name=playlist_name, description=playlist_description)
             spotify.playlist_add_items(playlist_id=playlist['id'], items=res)
         else:
-            logging.error('Playlist Creator: length of "song_ids" invalid')
+            # logging.error('Playlist Creator: length of "song_ids" invalid')
+            print('Playlist Creator: length of "song_ids" invalid')
 
     except:
-        logging.error(f'Error while creating a playlist: {format_exc()}')
+        # logging.error(f'Error while creating a playlist: {format_exc()}')
+        print(f'Error while creating a playlist: {format_exc()}')

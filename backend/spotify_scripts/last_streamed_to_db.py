@@ -9,7 +9,7 @@ from spotipy import SpotifyOAuth
 
 from private.auth import CLIENT_ID, REDIRECT_URI, CLIENT_SECRET
 from backend.tools import calculations, last_streamed_methods as lsm
-from backend.tools.db import dboperations
+from common.db import dboperations
 from backend.tools.important_values import *
 
 logging.basicConfig(
@@ -89,7 +89,7 @@ def main():
                 val = (album_id, album_name)
                 try:
                     dbops.write_to_albums(val)
-                    logging.info(f'Wrote Album {val + [1]} with Album-ID {val[0]} to {albums_tab_name} table.')
+                    logging.info(f'Wrote Album {val[1]} with Album-ID {val[0]} to {albums_tab_name} table.')
                 except mysql.connector.IntegrityError:
                     logging.error(f'Duplicate entry in {albums_tab_name} table for Album {val[1]} with '
                                   f'Album-ID {album_id}')
@@ -162,7 +162,7 @@ def main():
             os.remove(last_streams_dir)
             logging.info(f'Removed last_streams file.')
         except FileNotFoundError:
-            logging.error(f'An error occured while trying to remove the file:\n'
+            logging.error(f'An error occurred while trying to remove the file:\n'
                           f'{format_exc()}')
         finally:
             dbops.close_all()
@@ -170,10 +170,10 @@ def main():
         
 
     except FileNotFoundError:
-        logging.error(f'An error occured while trying to open the {last_streams_name} file:\n'
+        logging.error(f'An error occurred while trying to open the {last_streams_name} file:\n'
                       f'{format_exc()}')
     except:
-        logging.error(f'An error occured while running the script:\n{format_exc()}')
+        logging.error(f'An error occurred while running the script:\n{format_exc()}')
 
 
 if __name__ == '__main__':

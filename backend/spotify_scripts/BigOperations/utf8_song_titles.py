@@ -6,7 +6,7 @@ import time
 import requests
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
-from backend.tools.db import dboperations
+from common.db import dboperations
 from private.auth import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
 from traceback import format_exc
 from backend.tools.important_values import *

@@ -6,7 +6,7 @@ import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 import json
 import mysql.connector
-from backend.tools.db import dboperations
+from common.db import dboperations
 from backend.tools import calculations
 from private.auth import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
 import traceback
