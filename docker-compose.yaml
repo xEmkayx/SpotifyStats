@@ -3,38 +3,52 @@ services:
   backend:
     build:
       context: .
-      dockerfile: Dockerfile-backend
+      dockerfile: backend/Dockerfile-backend
     volumes:
       - data-volume:/app/data
     depends_on:
       - db
-    restart: always
+    restart: on-failure
+    environment:
+      SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID}
+      SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET}
+      SPOTIFY_REDIRECT_URI: ${SPOTIFY_REDIRECT_URI}
+      SCOPE: ${SCOPE}
+      SPOTIFY_USERNAME: ${SPOTIFY_USERNAME}
+      TOKEN_CACHE_FILE_PATH: ${TOKEN_CACHE_FILE_PATH}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_HOST: ${MYSQL_HOST}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
     networks:
       - backend-network
+    ports:
+      - "9876:9876"
 
-  frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile-frontend
-    volumes:
-      - data-volume:/app/data
-    networks:
-      - backend-network
+#  frontend:
+#    build:
+#      context: .
+#      dockerfile: frontend/Dockerfile-frontend
+#    volumes:
+#      - data-volume:/app/data
+#    networks:
+#      - backend-network
 
   db:
     image: mysql:latest
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_HOST: db
-      MYSQL_DATABASE: spotify_stats
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+#      MYSQL_ALLOW_EMPTY_PASSWORD: true
     ports:
       - "3306:3306"
     networks:
       - backend-network
     volumes:
       - db-data:/var/lib/mysql
+      - ./db/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
 
 networks:
   backend-network:

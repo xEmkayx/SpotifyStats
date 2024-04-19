@@ -8,8 +8,10 @@ from multipledispatch import dispatch
 from common.config.config import *
 from common.config.important_values import *
 from backend.tools.errors.CustomExceptions import InvalidTupleLength
+import os
 
 
+# todo: create singleton
 class DBOperations:
 
     def __init__(self):

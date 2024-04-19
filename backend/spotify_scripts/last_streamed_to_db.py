@@ -16,7 +16,7 @@ logging.basicConfig(
     level=log_level,
     format=log_format,
     datefmt=log_datefmt,
-    filename=log_filename
+    # filename=log_filename
 )
 
 

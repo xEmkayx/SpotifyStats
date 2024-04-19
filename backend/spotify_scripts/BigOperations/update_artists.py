@@ -9,17 +9,18 @@ from auth import spotify_auth_manager
 from common.db import dboperations
 import traceback
 
-dbops = dboperations.DBOperations()
 desired_format = '%Y-%m-%d %H:%M:%S'
-
-spotify = spotify_auth_manager.get_authenticated_spotify_client()
-
-# all_artists = dbops.select_from_table('artists', 'distinct artist_id, artist_name')
-all_artists = dbops.select_from_table('artists', 'distinct artist_id, artist_name',
-                                      r'artist_name LIKE "%\\\%"')
 
 
 def main():
+    dbops = dboperations.DBOperations()
+
+    spotify = spotify_auth_manager.get_authenticated_spotify_client()
+
+    # all_artists = dbops.select_from_table('artists', 'distinct artist_id, artist_name')
+    all_artists = dbops.select_from_table('artists', 'distinct artist_id, artist_name',
+                                          r'artist_name LIKE "%\\\%"')
+
     print(f'Started {__name__}')
     for artist in all_artists:
         tries = 0

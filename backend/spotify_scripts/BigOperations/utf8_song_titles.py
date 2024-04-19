@@ -17,16 +17,17 @@ logging.basicConfig(
     filename=log_filename
 )
 
-dbops = dboperations.DBOperations()
 desired_format = '%Y-%m-%d %H:%M:%S'
-
-spotify = spotify_auth_manager.get_authenticated_spotify_client()
-
-all_songs = dbops.select_from_table('songs', 'distinct song_id, song_name',
-                                    r'song_name LIKE "%\\\%"')
 
 
 def main():
+    dbops = dboperations.DBOperations()
+
+    spotify = spotify_auth_manager.get_authenticated_spotify_client()
+
+    all_songs = dbops.select_from_table('songs', 'distinct song_id, song_name',
+                                        r'song_name LIKE "%\\\%"')
+
     print(f'Started {__name__}')
     for song in all_songs:
         tries = 0

@@ -29,17 +29,34 @@ class SpotifyAuthManager(metaclass=Singleton):
         )
         self._token_info = None  # Definiere _token_info hier im Konstruktor
 
+    def get_auth_manager(self):
+        return self.sp_oauth
+
+    def get_auth_url(self):
+        return self.sp_oauth.get_authorize_url()
+
+    def generate_token_from_url(self, url):
+        code = self.sp_oauth.parse_auth_response_url(url)[1]
+
+        token_info = self.sp_oauth.get_access_token(code)
+
+        if token_info:
+            with open(TOKEN_CACHE_FILE_PATH, 'w') as file:
+                json.dump(token_info, file)
+
+        return token_info
+
     def load_token(self):
         try:
-            if os.path.isfile('/path/to/your/token_file.json'):
-                with open('/path/to/your/token_file.json', 'r') as file:
+            if os.path.isfile(TOKEN_CACHE_FILE_PATH):
+                with open(TOKEN_CACHE_FILE_PATH, 'r') as file:
                     self._token_info = json.load(file)
         except Exception as e:
             print(f"Failed to load token: {e}")
 
     def save_token(self):
         try:
-            with open('/path/to/your/token_file.json', 'w') as file:
+            with open(TOKEN_CACHE_FILE_PATH, 'w') as file:
                 json.dump(self._token_info, file)
         except Exception as e:
             print(f"Failed to save token: {e}")

@@ -8,16 +8,15 @@ logging.basicConfig(
     level=log_level,
     format=log_format,
     datefmt=log_datefmt,
-    filename=log_filename
+    # filename=log_filename
 )
-
-
-scope = 'user-read-recently-played user-library-read playlist-read-private ' \
-        'playlist-read-collaborative user-top-read user-read-currently-playing'
 
 
 def main():
     spotify = spotify_auth_manager.get_authenticated_spotify_client()
+
+    if spotify is None:
+        raise Exception("No valid token")
 
     last_streams = spotify.current_user_recently_played(limit=50)
 
