@@ -7,10 +7,10 @@ import mysql.connector
 import spotipy
 from spotipy import SpotifyOAuth
 
-from private.auth import CLIENT_ID, REDIRECT_URI, CLIENT_SECRET
+from auth import spotify_auth_manager
 from backend.tools import calculations, last_streamed_methods as lsm
 from common.db import dboperations
-from backend.tools.important_values import *
+from common.config.important_values import *
 
 logging.basicConfig(
     level=log_level,
@@ -19,15 +19,11 @@ logging.basicConfig(
     filename=log_filename
 )
 
-scope = 'user-read-recently-played user-library-read playlist-read-private ' \
-        'playlist-read-collaborative user-top-read user-read-currently-playing'
-
 
 def main():
     try:
         dbops = dboperations.DBOperations()
-        spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=CLIENT_ID, client_secret=CLIENT_SECRET,
-                                                            redirect_uri=REDIRECT_URI, scope=scope))
+        spotify = spotify_auth_manager.get_authenticated_spotify_client()
 
         with open(last_streams_dir, 'r') as f:
             jf = json.load(f)

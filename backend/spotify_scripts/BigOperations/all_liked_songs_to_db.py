@@ -2,13 +2,12 @@
     Read all liked songs and write them to database
 """
 import time
-import spotipy
-from spotipy.oauth2 import SpotifyOAuth
 import json
 import mysql.connector
+
+from auth import spotify_auth_manager
 from common.db import dboperations
 from backend.tools import calculations
-from private.auth import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
 import traceback
 
 dbops = dboperations.DBOperations()
@@ -16,8 +15,7 @@ desired_format = '%Y-%m-%d %H:%M:%S'
 
 scope = 'user-library-read'
 
-spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=CLIENT_ID, client_secret=CLIENT_SECRET,
-                                                    redirect_uri=REDIRECT_URI, scope=scope))
+spotify = spotify_auth_manager.get_authenticated_spotify_client()
 
 liked_songs_path = './temp_files/liked_songs.json'
 

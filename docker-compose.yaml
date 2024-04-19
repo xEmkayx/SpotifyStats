@@ -1,0 +1,44 @@
+version: '3.8'
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile-backend
+    volumes:
+      - data-volume:/app/data
+    depends_on:
+      - db
+    restart: always
+    networks:
+      - backend-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile-frontend
+    volumes:
+      - data-volume:/app/data
+    networks:
+      - backend-network
+
+  db:
+    image: mysql:latest
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_HOST: db
+      MYSQL_DATABASE: spotify_stats
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "3306:3306"
+    networks:
+      - backend-network
+    volumes:
+      - db-data:/var/lib/mysql
+
+networks:
+  backend-network:
+
+volumes:
+  db-data:
+  data-volume:

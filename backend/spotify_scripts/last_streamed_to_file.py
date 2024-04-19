@@ -1,12 +1,8 @@
 import json
-import logging
 from traceback import format_exc
 
-import spotipy
-from spotipy.oauth2 import SpotifyOAuth
-
-from private.auth import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
-from backend.tools.important_values import *
+from auth import spotify_auth_manager
+from common.config.important_values import *
 
 logging.basicConfig(
     level=log_level,
@@ -21,8 +17,7 @@ scope = 'user-read-recently-played user-library-read playlist-read-private ' \
 
 
 def main():
-    spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=CLIENT_ID, client_secret=CLIENT_SECRET,
-                                                        redirect_uri=REDIRECT_URI, scope=scope))
+    spotify = spotify_auth_manager.get_authenticated_spotify_client()
 
     last_streams = spotify.current_user_recently_played(limit=50)
 

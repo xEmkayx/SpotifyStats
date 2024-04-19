@@ -9,13 +9,11 @@ import traceback
 from traceback import format_exc
 
 import mysql.connector
-import spotipy
-from spotipy import SpotifyOAuth
 
-from private.auth import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
+from auth import spotify_auth_manager
 from backend.tools import calculations, last_streamed_methods as lsm
 from common.db import dboperations
-from backend.tools.important_values import *
+from common.config.important_values import *
 
 logging.basicConfig(
     level=log_level,
@@ -37,8 +35,10 @@ def main():
     try:
         dbops = dboperations.DBOperations()
 
-        spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=CLIENT_ID, client_secret=CLIENT_SECRET,
-                                                            redirect_uri=REDIRECT_URI, scope=scope))
+        spotify = spotify_auth_manager.get_authenticated_spotify_client()
+
+        if spotify is None:
+            raise Exception(f"Error while fetching Spotify client in class {__name__}")
 
         playlist_items = spotify.playlist_items(playlist_id=playlist_id, offset=offset)
 

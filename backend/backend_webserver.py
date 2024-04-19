@@ -1,6 +1,7 @@
 from flask import Flask, request
 
 import backend.backend_main
+from backend.spotify_scripts import update_all
 from backend.tools import token_util
 
 app = Flask(__name__)
@@ -13,7 +14,7 @@ def callback():
 
 
 @app.route('/getRedirectUrl')
-def get_auth_url():
+def get_auth_url() -> str:
     return token_util.get_auth_url()
 
 
@@ -26,6 +27,12 @@ def callback():
         return "Abruf erfolgreich", 200
 
     return "Anforderung enthält kein JSON!", 400
+
+
+@app.route('/db/update/all')
+def db_update_all():
+    update_all.main()
+    return "Success", 200
 
 
 if __name__ == '__main__':

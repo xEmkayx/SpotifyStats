@@ -3,11 +3,10 @@
 """
 
 import mysql.connector
-# from tools import important_values as iv
 from multipledispatch import dispatch
 
-from backend.tools.important_values import *
-from private.connector_values import *
+from common.config.config import *
+from common.config.important_values import *
 from backend.tools.errors.CustomExceptions import InvalidTupleLength
 
 
@@ -16,10 +15,10 @@ class DBOperations:
     def __init__(self):
         # values taken from tools.important_values
         self.mydb = mysql.connector.connect(
-            host=host,
-            user=user,
-            password=password,
-            database=database
+            host=MYSQL_HOST,
+            user=MYSQL_USER,
+            password=MYSQL_PASSWORD,
+            database=MYSQL_DATABASE
         )
         self.cursorObject = self.mydb.cursor()
 

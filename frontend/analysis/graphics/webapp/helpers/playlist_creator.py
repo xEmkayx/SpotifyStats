@@ -1,9 +1,9 @@
 from datetime import datetime
 from traceback import format_exc
-import spotipy
-from spotipy import SpotifyOAuth
 
-from private.auth import CLIENT_ID, REDIRECT_URI, CLIENT_SECRET, USERNAME
+from auth import spotify_auth_manager
+from common.config.config import SPOTIFY_USERNAME
+
 # todo: reimplement
 # from backend.tools.important_values import *
 
@@ -36,10 +36,9 @@ def create_playlist(song_ids: list, range: str):
             playlist_name = f'SpotifyStats {current_date}'
             playlist_description = f'Top {len(res)} songs in the range of {range}.' \
                                    f'\nThis playlist was generated with SpotifyStats on {current_date}'
-            spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=CLIENT_ID, client_secret=CLIENT_SECRET,
-                                                                redirect_uri=REDIRECT_URI, scope=scope))
+            spotify = spotify_auth_manager.get_authenticated_spotify_client()
 
-            playlist = spotify.user_playlist_create(user=USERNAME, name=playlist_name, description=playlist_description)
+            playlist = spotify.user_playlist_create(user=SPOTIFY_USERNAME, name=playlist_name, description=playlist_description)
             spotify.playlist_add_items(playlist_id=playlist['id'], items=res)
         else:
             # logging.error('Playlist Creator: length of "song_ids" invalid')

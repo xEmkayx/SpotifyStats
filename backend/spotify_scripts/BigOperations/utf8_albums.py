@@ -4,20 +4,16 @@
 import time
 
 import requests
-import spotipy
-from spotipy.oauth2 import SpotifyOAuth
+
+from auth import spotify_auth_manager
 from common.db import dboperations
-from private.auth import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
 import traceback
 
 dbops = dboperations.DBOperations()
 desired_format = '%Y-%m-%d %H:%M:%S'
 
-# print(json.dumps(jf, indent=4))
-scope = 'user-library-read'
 
-spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=CLIENT_ID, client_secret=CLIENT_SECRET,
-                                                    redirect_uri=REDIRECT_URI, scope=scope))
+spotify = spotify_auth_manager.get_authenticated_spotify_client()
 
 all_albums = dbops.select_from_table('albums', 'distinct album_id, album_name',
                                      r'album_name LIKE "%\\\%"')

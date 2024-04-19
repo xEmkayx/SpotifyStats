@@ -3,17 +3,14 @@
 """
 import pandas as pd
 
+from auth import spotify_auth_manager
 from frontend.analysis.graphics.webapp.df_files import ndf_helper
 from frontend.analysis.graphics.webapp.helpers import summary_cards, time_functions
 from datetime import date, datetime
-import spotipy
-from spotipy import SpotifyOAuth
-from private.auth import CLIENT_ID, REDIRECT_URI, CLIENT_SECRET
 from dash import html
 import dash_bootstrap_components as dbc
 
-spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=CLIENT_ID, client_secret=CLIENT_SECRET,
-                                                    redirect_uri=REDIRECT_URI, scope=''))
+spotify = spotify_auth_manager.get_authenticated_spotify_client()
 
 
 def get_top_songs_cards(df: pd.DataFrame, start_date: str = str(date(2010, 1, 1)), end_date: str = str(date.today()),

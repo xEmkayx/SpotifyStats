@@ -4,19 +4,16 @@
 import time
 
 import requests
-import spotipy
-from spotipy.oauth2 import SpotifyOAuth
+
+from auth import spotify_auth_manager
 from common.db import dboperations
-from private.auth import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
 import traceback
 
 dbops = dboperations.DBOperations()
 desired_format = '%Y-%m-%d %H:%M:%S'
 
-scope = 'user-library-read'
+spotify = spotify_auth_manager.get_authenticated_spotify_client()
 
-spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=CLIENT_ID, client_secret=CLIENT_SECRET,
-                                                    redirect_uri=REDIRECT_URI, scope=scope))
 # all_artists = dbops.select_from_table('artists', 'distinct artist_id, artist_name')
 all_artists = dbops.select_from_table('artists', 'distinct artist_id, artist_name',
                                       r'artist_name LIKE "%\\\%"')

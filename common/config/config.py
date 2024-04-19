@@ -1,0 +1,20 @@
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+CLIENT_ID = os.getenv('SPOTIFY_CLIENT_ID', 'default_client_id')
+CLIENT_SECRET = os.getenv('SPOTIFY_CLIENT_SECRET', 'default_client_secret')
+REDIRECT_URI = os.getenv('SPOTIFY_REDIRECT_URI', 'default_redirect_uri')
+# todo: check scopes
+SCOPE = 'user-read-recently-played user-library-read user-read-private playlist-read-private ' \
+        'playlist-read-collaborative user-top-read user-read-currently-playing'
+TOKEN_CACHE_FILE_PATH = os.getenv('TOKEN_CACHE_FILE_PATH', default='/app/data/spotify_token_cache')
+SPOTIFY_USERNAME = os.getenv('USERNAME')
+
+# mysql
+MYSQL_ROOT_PASSWORD = os.getenv('MYSQL_ROOT_PASSWORD')
+MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD')
+MYSQL_HOST = os.getenv('MYSQL_HOST', default='db')
+MYSQL_USER = os.getenv('MYSQL_USER')
+MYSQL_DATABASE = os.getenv('MYSQL_DATABASE')

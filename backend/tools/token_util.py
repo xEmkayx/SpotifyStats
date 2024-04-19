@@ -1,5 +1,4 @@
 import time
-import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 import json
 import os
@@ -9,6 +8,7 @@ import os
 scope = 'playlist-modify-public playlist-modify-private'
 
 
+# todo: possibly delete class, since all logic is now in spotify_auth_manager.py
 def token_exists(token_path):
     return os.path.isfile(token_path)
 
@@ -30,7 +30,7 @@ def refresh_if_needed(token_info):
             redirect_uri=os.getenv('REDIRECT_URI'),
             scope=scope,
             open_browser=False,
-            cache_path=constants.CACHE_FILE_NAME
+            # cache_path=constants.CACHE_FILE_NAME
         )
         # Aktualisiere den token
         token_info = sp_oauth.refresh_access_token(token_info['refresh_token'])
@@ -50,7 +50,7 @@ def get_auth_url():
         redirect_uri=os.getenv('REDIRECT_URI'),
         scope=scope,
         open_browser=False,
-        cache_path=constants.CACHE_FILE_NAME,
+        # cache_path=constants.CACHE_FILE_NAME,
         # show_dialog=True
     )
     return auth_manager.get_authorize_url()
@@ -63,7 +63,7 @@ def generate_token_from_url(url: str):
         redirect_uri=os.getenv('REDIRECT_URI'),
         scope=scope,
         open_browser=False,
-        cache_path=constants.CACHE_FILE_NAME,
+        # cache_path=constants.CACHE_FILE_NAME,
         # show_dialog=True
     )
 
@@ -71,8 +71,8 @@ def generate_token_from_url(url: str):
 
     token_info = sp_oauth.get_access_token(code)
 
-    if token_info:
-        with open(constants.CACHE_FILE_NAME, 'w') as file:
-            json.dump(token_info, file)
+    # if token_info:
+    #     with open(constants.CACHE_FILE_NAME, 'w') as file:
+    #         json.dump(token_info, file)
 
     return token_info

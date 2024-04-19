@@ -1,0 +1,21 @@
+FROM python:3.10
+
+WORKDIR /app
+
+# Abhängigkeiten installieren
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+EXPOSE 8123
+
+CMD ["python", "./webserver.py"]
+
+FROM python:3.10
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+# TODO: checken ob pfade hier passen
+COPY frontend/ .
+COPY common/ ./common
+#CMD ["python", "app.py"]
