@@ -20,6 +20,10 @@ jobs:
       - name: Check out the repo
         uses: actions/checkout@v2
 
+      - name: Prepare lowercase repository owner
+        id: prep
+        run: echo "lowercase_owner=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
 #      - name: Set up QEMU
 #        uses: docker/setup-qemu-action@v1
 
@@ -39,4 +43,4 @@ jobs:
           context: .
           file: ./backend/Dockerfile-backend #Pfad zum Dockerfile-Backend; stellen Sie sicher, dass dieser korrekt ist.
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/backend:${{ github.sha }}
+          tags: ghcr.io/${{ env.lowercase_owner }}/backend:${{ github.sha }}
