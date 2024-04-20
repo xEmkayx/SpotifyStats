@@ -1,4 +1,5 @@
 import json
+import os.path
 from traceback import format_exc
 
 from auth import spotify_auth_manager
@@ -21,6 +22,8 @@ def main():
     last_streams = spotify.current_user_recently_played(limit=50)
 
     try:
+        if not os.path.exists(os.path.dirname(last_streams_dir)):
+            os.makedirs(os.path.dirname(last_streams_dir))
         with open(last_streams_dir, 'w') as jf:
             jf.write(json.dumps(last_streams, indent=4))
         logging.info(f'Wrote to last_streams.json')
