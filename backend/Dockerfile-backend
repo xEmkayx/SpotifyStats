@@ -8,5 +8,5 @@ COPY backend/ ./backend
 COPY common/ ./common
 COPY auth/ ./auth
 EXPOSE 9876
-#CMD ["mkdir", "./common/temp_files"]
+CMD ["mkdir", "./common/temp_files"]
 CMD ["python", "./backend/backend_webserver.py"]
