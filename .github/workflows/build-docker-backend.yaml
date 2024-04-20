@@ -43,4 +43,4 @@ jobs:
           context: .
           file: ./backend/Dockerfile-backend #Pfad zum Dockerfile-Backend; stellen Sie sicher, dass dieser korrekt ist.
           push: true
-          tags: ghcr.io/${{ env.lowercase_owner }}/backend:${{ github.sha }}
+          tags: ghcr.io/${{ env.lowercase_owner }}/spotify-stats/backend:latest
