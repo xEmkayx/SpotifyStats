@@ -82,14 +82,3 @@ def get_authenticated_spotify_client():
     else:
         spotify_manager.refresh_if_needed()
         return spotipy.Spotify(auth=spotify_manager.get_access_token())
-
-
-# Gebrauch des SpotifyClient:
-# spotify = SpotifyAuthManager()
-# spotify.load_token()
-#
-# if not spotify.get_access_token():
-#     print('No token')
-# else:
-#     spotify.refresh_if_needed()
-#     spotify_api = spotipy.Spotify(auth=spotify.get_access_token())
