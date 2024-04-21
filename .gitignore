@@ -221,7 +221,7 @@ fabric.properties
 !/requirements_latest.txt
 !/envv_310/
 !/private/auth.ini
-!/frontend/analysis/graphics/webapp/pages/test.py
+/frontend/analysis/graphics/webapp/pages/test.py
 /.scannerwork/
 /.scannerwork/**
 .scannerwork
