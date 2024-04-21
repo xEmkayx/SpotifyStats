@@ -5,6 +5,7 @@ from auth import spotify_auth_manager
 from common.config.config import SPOTIFY_USERNAME
 
 # todo: reimplement
+# todo: fix this component
 # from backend.tools.important_values import *
 
 # logging.basicConfig(

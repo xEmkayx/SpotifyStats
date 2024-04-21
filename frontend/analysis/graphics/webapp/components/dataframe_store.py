@@ -6,22 +6,46 @@ from frontend.analysis.graphics.webapp.helpers.df_filenames import *
 
 
 class DataframeStore:
-    def __init__(self):
-        self.store_id = DATAFRAME_STORE_ID
-        self.store_item = init_store(self.store_id)
+    _instance = None
 
-    def render(self):
-        return html.Div(
-            self.store_item
-        )
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(DataframeStore, cls).__new__(cls)
+            cls.store = dcc.Store(id=DATAFRAME_STORE_ID, data=cls.load_initial_dataframe())
+        return cls._instance
+
+    @staticmethod
+    def initialize():
+        if DataframeStore._instance is None:
+            store_data = DataframeStore.load_initial_dataframe()
+            DataframeStore().store = dcc.Store(id=DATAFRAME_STORE_ID, data=store_data)
+
+    @staticmethod
+    def load_initial_dataframe():
+        return get_default_df()
+
+    @classmethod
+    def get_store(cls):
+        return cls()._instance.store
 
 
-def init_store(item_id):
-    store = dcc.Store(
-        id=item_id,
-        data=get_default_df(),
-    )
-    return store
+# class DataframeStore:
+#     def __init__(self):
+#         self.store_id = DATAFRAME_STORE_ID
+#         self.store_item = init_store(self.store_id)
+#
+#     def render(self):
+#         return html.Div(
+#             self.store_item
+#         )
+#
+#
+# def init_store(item_id):
+#     store = dcc.Store(
+#         id=item_id,
+#         data=get_default_df(),
+#     )
+#     return store
 
 
 def get_default_df():

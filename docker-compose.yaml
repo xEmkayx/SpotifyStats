@@ -1,3 +1,4 @@
+# todo: healthcheck
 version: '3.8'
 services:
   backend:

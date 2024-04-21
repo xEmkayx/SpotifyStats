@@ -41,7 +41,7 @@ theme_change = ThemeChangerAIO(aio_id="all-themes",
 
 dbc_css = "https://cdn.jsdelivr.net/gh/AnnMarieW/dash-bootstrap-templates/dbc.min.css"
 
-store = DataframeStore()
+# store = DataframeStore()
 
 # cache = diskcache.Cache("./cache")
 # background_callback_manager = DiskcacheManager(cache)
@@ -56,7 +56,6 @@ app = dash.Dash(__name__, use_pages=True, assets_ignore='./assets/*.css',
                 # background_callback_manager=background_callback_manager
                 )
 
-
 button_group = dbc.ButtonGroup(
     [
         dbc.Button("Left", color="danger", outline=True),
@@ -67,9 +66,22 @@ button_group = dbc.ButtonGroup(
 
 navbar = Navbar(dash.page_registry.values())
 
-app.layout = dbc.Container(
-    [store.render(), navbar, theme_change, dash.page_container], fluid=True, className="dbc"  # theme_toggle
-)
+
+# app.layout = dbc.Container(
+#     [
+#         # store.render(),
+#         DataframeStore.get_store(), navbar, theme_change, dash.page_container], fluid=True, className="dbc"  # theme_toggle
+# )
+def layout():
+    return dbc.Container(
+        [
+            # store.render(),
+            DataframeStore.get_store(), navbar, theme_change, dash.page_container], fluid=True, className="dbc"
+        # theme_toggle
+    )
+
+
+app.layout = layout()
 
 
 def main(reload_df_on_start: bool = True):
@@ -83,5 +95,5 @@ def main(reload_df_on_start: bool = True):
 
 if __name__ == '__main__':
     # dataframe_helpers.load_default_df()
-    threading.Thread(target=main(False)).start()
-    # main(False)
+    # threading.Thread(target=main(True)).start()
+    main(False)
