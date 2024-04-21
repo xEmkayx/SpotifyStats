@@ -228,3 +228,4 @@ fabric.properties
 .scannerwork/
 /.scannerwork
 !/.scannerwork/
+./sonar-project.properties
