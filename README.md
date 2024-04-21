@@ -1,14 +1,11 @@
-<h1 align="center">Welcome to SpotifyStats 👋</h1>
-<p>
-  <img alt="Version" src="https://img.shields.io/badge/version-0.8-blue.svg?cacheSeconds=2592000" />
-  <a href="docs" target="_blank">
-    <img alt="Documentation" src="https://img.shields.io/badge/documentation-yes-brightgreen.svg" />
-  </a>
-  <a href="https://github.com/xEmkayx/SpotifyStats/blob/master/license.md" target="_blank">
-    <img alt="License: MPL--2.0" src="https://img.shields.io/badge/License-MPL--2.0-yellow.svg" />
-  </a>
-</p>
+# SpotifyStats
 
+---
+
+![Python version](https://img.shields.io/badge/python-3.11-blue.svg)
+![GitHub last commit](https://img.shields.io/github/last-commit/xEmkayx/SpotifyStats)
+![License](https://img.shields.io/github/license/xEmkayx/SpotifyStats)
+![Docker Build](https://img.shields.io/docker/v/xEmkayx/SpotifyStats)
 > Display your personal Spotify streaming stats!
 
 ## Author

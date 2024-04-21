@@ -1,6 +1,6 @@
 /testing/
 /misc/
-/spotify_scripts/DL_Data/
+/backend/spotify_scripts/DL_Data/
 /private/auth.py
 /private/connector_values.py
 /obsolet/
@@ -8,30 +8,30 @@
 /temp_files/playlist_todb.json
 /temp_files/mn.json
 /logs/
-/analysis/graphics/webapp/df_files/all_streams.csv
-/analysis/graphics/webapp/df_files/allrounder.csv
-/analysis/graphics/webapp/df_files/anz_album_streams.csv
+/frontend/analysis/graphics/webapp/df_files/all_streams.csv
+/frontend/analysis/graphics/webapp/df_files/allrounder.csv
+/frontend/analysis/graphics/webapp/df_files/anz_album_streams.csv
 /.vscode/
 /old.git/
 /envv/
 .idea/
 /assets/
-/analysis/graphics/testing/
+/frontend/analysis/graphics/webapp/testing/
 /venv/
-spotify_scripts/.cache
-spotify_scripts/BigOperations/.cache
-spotify_scripts/skipper.py
-analysis/graphics/webapp/helpers/df_temp_write_files_alt.py
+backend/spotify_scripts/.cache
+backend/spotify_scripts/BigOperations/.cache
+backend/spotify_scripts/skipper.py
+frontend/analysis/graphics/webapp/helpers/df_temp_write_files_alt.py
 analysis/graphics/webapp/select_statements_old.py
 analysis/graphics/webapp/test
 deploy.bat
 README_old.md
-spotify_scripts/BigOperations/unliked_songs.json
-spotify_scripts/BigOperations/unliked_songs.txt
+backend/spotify_scripts/BigOperations/unliked_songs.json
+backend/spotify_scripts/BigOperations/unliked_songs.txt
 
 # random scripts
-spotify_scripts/BigOperations/add_one_h_to_last_streams.py
-spotify_scripts/BigOperations/createMNTable.py
+backend/spotify_scripts/BigOperations/add_one_h_to_last_streams.py
+backend/spotify_scripts/BigOperations/createMNTable.py
 
 # Created by .ignore support plugin (hsz.mobi)
 ### Python template
@@ -221,4 +221,11 @@ fabric.properties
 !/requirements_latest.txt
 !/envv_310/
 !/private/auth.ini
-!/analysis/graphics/webapp/pages/test.py
+/frontend/analysis/graphics/webapp/pages/test.py
+/.scannerwork/
+/.scannerwork/**
+.scannerwork
+.scannerwork/
+/.scannerwork
+!/.scannerwork/
+./sonar-project.properties
