@@ -3,11 +3,12 @@ name: Build and push backend Docker image
 on:
   push:
     branches:
-      - refactor # Triggert den Workflow bei jedem Push in den main Branch
-  # Optional können Sie auch für Pull Requests den Workflow triggern
+      - master
+      - dev
   pull_request:
     branches:
-      - main
+      - master
+      - dev
 
 jobs:
   build_and_push_backend_image:
