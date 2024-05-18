@@ -30,9 +30,9 @@ def callback():
         url = request.get_json()
         print(url['url'])
         spotify.generate_token_from_url(url['url'])
-        return "Abruf erfolgreich", 200
+        return "Success", 200
 
-    return "Anforderung enthält kein JSON!", 400
+    return "Invalid JSON format", 400
 
 
 @app.route('/db/update/all')
