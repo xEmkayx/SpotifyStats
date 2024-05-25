@@ -35,8 +35,11 @@ def create_playlist(song_ids: list, range: str):
             current_date = datetime.today().strftime('%Y-%m-%d')
 
             playlist_name = f'SpotifyStats {current_date}'
+            # FIXME: playlist description with newline now throws error for some reason
+            # playlist_description = f'Top {len(res)} songs in the range of {range}.' \
+            #                        f'\nThis playlist was generated with SpotifyStats on {current_date}'
             playlist_description = f'Top {len(res)} songs in the range of {range}.' \
-                                   f'\nThis playlist was generated with SpotifyStats on {current_date}'
+                                   f'This playlist was generated with SpotifyStats on {current_date}'
             spotify = spotify_auth_manager.get_authenticated_spotify_client()
 
             playlist = spotify.user_playlist_create(user=SPOTIFY_USERNAME, name=playlist_name, description=playlist_description)
