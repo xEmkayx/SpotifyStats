@@ -9,6 +9,7 @@ RUN pip install --no-cache-dir -r requirements-frontend.txt
 COPY frontend/ ./frontend
 COPY common/ ./common
 COPY auth/ ./auth
+COPY backend/ ./backend
 
 EXPOSE 8050
 CMD ["python", "./frontend/app.py"]
