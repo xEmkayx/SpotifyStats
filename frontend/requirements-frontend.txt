@@ -1,0 +1,11 @@
+dash~=2.6.2
+dash-bootstrap-components~=1.4.1
+dash-bootstrap-templates~=1.0.8
+plotly~=5.11.0
+pandas~=1.4.3
+numpy~=1.23.5
+matplotlib~=3.7.1
+spotipy~=2.19.0
+mysql-connector-python~=8.0.28
+multipledispatch~=0.6.0
+python-dotenv~=1.0.1
