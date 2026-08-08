@@ -90,10 +90,14 @@ def main(reload_df_on_start: bool = True):
         _ = dataframe_loader.reload_df_store()
         # dataframe_getter.reload_dfs()
         # analysis.graphics.webapp.helpers.setting_functions.reset_df()
-    app.run(debug=True, threaded=False)
+    # host/port/debug via env so the same entrypoint works locally and in Docker
+    host = os.getenv('DASH_HOST', '127.0.0.1')
+    port = int(os.getenv('DASH_PORT', '8050'))
+    debug = os.getenv('DASH_DEBUG', 'false').lower() == 'true'
+    app.run(host=host, port=port, debug=debug, threaded=False)
 
 
 if __name__ == '__main__':
     # dataframe_helpers.load_default_df()
     # threading.Thread(target=main(True)).start()
-    main(False)
+    main(reload_df_on_start=os.getenv('DASH_RELOAD_ON_START', 'true').lower() == 'true')
