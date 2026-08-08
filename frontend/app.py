@@ -103,4 +103,5 @@ def main(reload_df_on_start: bool = True):
 if __name__ == '__main__':
     # dataframe_helpers.load_default_df()
     # threading.Thread(target=main(True)).start()
-    main(reload_df_on_start=os.getenv('DASH_RELOAD_ON_START', 'true').lower() == 'true')
+    # Store already queries the DB directly at import, so no reload needed by default.
+    main(reload_df_on_start=os.getenv('DASH_RELOAD_ON_START', 'false').lower() == 'true')

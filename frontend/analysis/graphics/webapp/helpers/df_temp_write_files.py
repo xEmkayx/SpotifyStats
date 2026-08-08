@@ -9,7 +9,8 @@ from frontend.analysis.graphics.webapp.select_statements import *
 
 def write_allrounder():
     df_anz_single_song_streams = allrounder()
-    df_anz_single_song_streams.to_csv(fr'{df_common_path}\{fn_df_allrounder}.csv')
+    import os
+    df_anz_single_song_streams.to_csv(os.path.join(df_common_path, f'{fn_df_allrounder}.csv'))
 
 
 if __name__ == '__main__':

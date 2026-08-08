@@ -2,7 +2,7 @@ from dash import html, dcc
 import pandas as pd
 
 from frontend.analysis.graphics.webapp.helpers.consts import DATAFRAME_STORE_ID
-from frontend.analysis.graphics.webapp.helpers.df_filenames import *
+from frontend.analysis.graphics.webapp.select_statements import allrounder
 
 
 class DataframeStore:
@@ -30,5 +30,7 @@ class DataframeStore:
 
 
 def get_default_df():
-    df = pd.read_csv(fr'{df_common_path}\{fn_df_allrounder}.csv', index_col=[0])
+    # Query the DB directly instead of the CSV cache detour (the CSV was written
+    # with a Windows path and never exists in the container).
+    df = allrounder()
     return df.to_dict('records')
