@@ -9,3 +9,5 @@ spotipy~=2.19.0
 mysql-connector-python~=8.0.28
 multipledispatch~=0.6.0
 python-dotenv~=1.0.1
+Flask~=2.2.2
+Werkzeug~=2.2.2
