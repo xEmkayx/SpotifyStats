@@ -1,6 +1,5 @@
 import json
 import os.path
-import time
 from traceback import format_exc
 
 import mysql.connector
@@ -55,9 +54,7 @@ def main():
                 song_length = json.dumps(item['track']['duration_ms'])
                 song_length = lsm.clean_item(song_length)
 
-                time.sleep(0.1)
                 song_length = calculations.ms_to_timestring(int(song_length))
-                time.sleep(0.1)
 
                 logging.info(
                     msg='\n' + 25 * '-/-' + '\n' + f'{artist_name} ----- {song_name}' + '\n' +
@@ -130,7 +127,6 @@ def main():
                         logging.error(f'Error in the MYSQL Interface: \n'
                                       f'{format_exc()}')
                         pass
-                    time.sleep(0.1)
 
                 # all artists on song -> artists_songs table
                 sartists = lsm.get_artists_songs(item, song_id)
@@ -145,7 +141,6 @@ def main():
                         logging.error(f'Error in the MYSQL Interface: \n'
                                       f'{format_exc()}')
                         pass
-                    time.sleep(0.1)
 
                 # songs in history -> stream_history
                 val = (played_at, song_id)

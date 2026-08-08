@@ -31,8 +31,11 @@ available_themes = [
     dbc.themes.ZEPHYR
 ]
 
-pages_folder = os.path.join(Path(__file__).parent, 'analysis/graphics/webapp/pages')
-assets_folder = os.path.join(Path(__file__).parent, 'analysis/graphics/webapp/assets')
+# Relative to the app root (dir of this file). Dash 2.6.x splits pages_folder on
+# "/" and re-joins onto the root path, which mangles absolute POSIX paths on Linux
+# (leading "/") -> use relative paths so it works in the container and on Windows.
+pages_folder = 'analysis/graphics/webapp/pages'
+assets_folder = 'analysis/graphics/webapp/assets'
 
 dbc_css = "https://cdn.jsdelivr.net/gh/AnnMarieW/dash-bootstrap-templates/dbc.min.css"
 
