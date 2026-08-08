@@ -3,7 +3,9 @@ import pandas as pd
 
 
 def date_mask(start_date: str, end_date: str, df: pd.DataFrame):
-    df['Played at'] = pd.to_datetime(df['Played at'], format='mixed')
+    # No format= -> pandas infers per element, which handles the mixed timestamp
+    # formats in the DB (with/without seconds). format='mixed' needs pandas >=2.0.
+    df['Played at'] = pd.to_datetime(df['Played at'])
     mask = (df['Played at'] >= start_date) & (df['Played at'] <= end_date)
     return mask
 
