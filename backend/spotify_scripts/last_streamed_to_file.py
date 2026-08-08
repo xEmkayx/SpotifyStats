@@ -3,6 +3,7 @@ import os.path
 from traceback import format_exc
 
 from auth import spotify_auth_manager
+from auth.spotify_auth_manager import SpotifyServerAuth
 from common.config.important_values import *
 
 logging.basicConfig(
@@ -14,7 +15,8 @@ logging.basicConfig(
 
 
 def main():
-    spotify = spotify_auth_manager.get_authenticated_spotify_client()
+    auth = SpotifyServerAuth()
+    spotify = auth.get_authenticated_spotify_client()
 
     if spotify is None:
         raise Exception("No valid token")

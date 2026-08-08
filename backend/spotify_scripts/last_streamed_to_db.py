@@ -8,6 +8,7 @@ import spotipy
 from spotipy import SpotifyOAuth
 
 from auth import spotify_auth_manager
+from auth.spotify_auth_manager import SpotifyServerAuth
 from backend.tools import calculations, last_streamed_methods as lsm
 from common.db import dboperations
 from common.config.important_values import *
@@ -23,7 +24,8 @@ logging.basicConfig(
 def main():
     try:
         dbops = dboperations.DBOperations()
-        spotify = spotify_auth_manager.get_authenticated_spotify_client()
+        auth = SpotifyServerAuth()
+        spotify = auth.get_authenticated_spotify_client()
 
         with open(last_streams_dir, 'r') as f:
             jf = json.load(f)

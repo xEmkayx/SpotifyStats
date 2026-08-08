@@ -6,6 +6,7 @@ import time
 import requests
 
 from auth import spotify_auth_manager
+from auth.spotify_auth_manager import SpotifyServerAuth
 from common.db import dboperations
 from traceback import format_exc
 from common.config.important_values import *
@@ -23,7 +24,8 @@ desired_format = '%Y-%m-%d %H:%M:%S'
 def main():
     dbops = dboperations.DBOperations()
 
-    spotify = spotify_auth_manager.get_authenticated_spotify_client()
+    auth = SpotifyServerAuth()
+    spotify = auth.get_authenticated_spotify_client()
 
     all_songs = dbops.select_from_table('songs', 'distinct song_id, song_name',
                                         r'song_name LIKE "%\\\%"')

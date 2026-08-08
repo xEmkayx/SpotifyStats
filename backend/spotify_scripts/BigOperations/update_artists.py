@@ -2,12 +2,12 @@
     update all artist names in database that aren't encoded properly (not utf-8)
 """
 import time
+import traceback
 
 import requests
 
-from auth import spotify_auth_manager
+from auth.spotify_auth_manager import SpotifyServerAuth
 from common.db import dboperations
-import traceback
 
 desired_format = '%Y-%m-%d %H:%M:%S'
 
@@ -15,7 +15,8 @@ desired_format = '%Y-%m-%d %H:%M:%S'
 def main():
     dbops = dboperations.DBOperations()
 
-    spotify = spotify_auth_manager.get_authenticated_spotify_client()
+    auth = SpotifyServerAuth()
+    spotify = auth.get_authenticated_spotify_client()
 
     # all_artists = dbops.select_from_table('artists', 'distinct artist_id, artist_name')
     all_artists = dbops.select_from_table('artists', 'distinct artist_id, artist_name',

@@ -161,7 +161,11 @@ def update_graph_theme(df_store, theme, start_date, end_date, btn_7d, btn_m, btn
                                                      sorted_by_mins=sorted_by_minutes)
     """
 
-    stream_sum = pd.to_timedelta('00:' + df_combined["Song Length"]).sum()
+    # stream_sum = pd.to_timedelta('00:' + df_combined["Song Length"]).sum()
+
+    df_combined["Song Length"] = df_combined["Song Length"].apply(ndf_helper.format_to_timedelta)
+    stream_sum = pd.to_timedelta(df_combined["Song Length"]).sum()
+
     sum_conv = strfdelta(stream_sum, "{days} Tage, {hours} Stunden, {minutes} Minuten und {seconds} Sekunden")
     sum_text = f'(Ungefähre) Gesamte Hörzeit: {sum_conv}'
 

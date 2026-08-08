@@ -6,6 +6,7 @@ import time
 import requests
 
 from auth import spotify_auth_manager
+from auth.spotify_auth_manager import SpotifyServerAuth
 from common.db import dboperations
 import traceback
 
@@ -17,7 +18,8 @@ desired_format = '%Y-%m-%d %H:%M:%S'
 
 def main():
     dbops = dboperations.DBOperations()
-    spotify = spotify_auth_manager.get_authenticated_spotify_client()
+    auth = SpotifyServerAuth()
+    spotify = auth.get_authenticated_spotify_client()
 
     all_albums = dbops.select_from_table('albums', 'distinct album_id, album_name',
                                          r'album_name LIKE "%\\\%"')

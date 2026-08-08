@@ -34,11 +34,6 @@ available_themes = [
 pages_folder = os.path.join(Path(__file__).parent, 'analysis/graphics/webapp/pages')
 assets_folder = os.path.join(Path(__file__).parent, 'analysis/graphics/webapp/assets')
 
-theme_change = ThemeChangerAIO(aio_id="all-themes",
-                               radio_props={
-                                   'value': default_theme
-                               })
-
 dbc_css = "https://cdn.jsdelivr.net/gh/AnnMarieW/dash-bootstrap-templates/dbc.min.css"
 
 # store = DataframeStore()
@@ -72,6 +67,11 @@ navbar = Navbar(dash.page_registry.values())
 #         # store.render(),
 #         DataframeStore.get_store(), navbar, theme_change, dash.page_container], fluid=True, className="dbc"  # theme_toggle
 # )
+theme_change = ThemeChangerAIO(aio_id="all-themes",
+                               radio_props={
+                                   'value': default_theme
+                               })
+
 def layout():
     return dbc.Container(
         [
@@ -90,7 +90,7 @@ def main(reload_df_on_start: bool = True):
         _ = dataframe_loader.reload_df_store()
         # dataframe_getter.reload_dfs()
         # analysis.graphics.webapp.helpers.setting_functions.reset_df()
-    app.run(debug=True, threaded=True)
+    app.run(debug=True, threaded=False)
 
 
 if __name__ == '__main__':

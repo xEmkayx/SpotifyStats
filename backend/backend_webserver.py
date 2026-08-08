@@ -1,14 +1,16 @@
 #!/usr/bin/env python
-from flask import Flask, request
+import os
+
+from flask import Flask, request, jsonify
 
 from backend import backend_main
-from auth.spotify_auth_manager import SpotifyAuthManager
+from auth.spotify_auth_manager import SpotifyServerAuth
 from backend.spotify_scripts import update_all
 
 app = Flask(__name__)
 
-spotify = SpotifyAuthManager()
-
+# spotify = SpotifyAuthManager()
+auth = SpotifyServerAuth()
 
 @app.route('/start')
 def start():
@@ -19,20 +21,21 @@ def start():
     return "Success", 200
 
 
-@app.route('/getRedirectUrl')
-def get_auth_url() -> str:
-    return spotify.get_auth_url()
+@app.route("/auth/start")
+def auth_start():
+    state = os.urandom(16).hex()
+    url = auth.get_authorize_url(state=state)
+    return jsonify({"authorize_url": url, "state": state})
 
-
-@app.route('/callback', methods=['POST'])
-def callback():
-    if request.is_json:
-        url = request.get_json()
-        print(url['url'])
-        spotify.generate_token_from_url(url['url'])
-        return "Success", 200
-
-    return "Invalid JSON format", 400
+@app.route("/auth/complete", methods=["POST"])
+def auth_complete():
+    data = request.get_json(force=True)
+    code = data.get("code")
+    state = data.get("state")  # prüfe gegen zuvor ausgegebenen state
+    if not code:
+        return "missing code", 400
+    auth.complete_authorization(code)
+    return "ok", 200
 
 
 @app.route('/db/update/all')

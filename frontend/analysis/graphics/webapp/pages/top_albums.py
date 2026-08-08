@@ -17,7 +17,7 @@ graph = dcc.Graph(
     id='album-streams-line'
 )
 
-theme_change = ThemeChangerAIO(aio_id="theme")
+# theme_change = ThemeChangerAIO(aio_id="theme")
 
 sb = SelectionBox(name_helpers.get_current_file_name(__file__))
 datepicker_id = sb.get_datepicker_id()

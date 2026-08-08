@@ -18,3 +18,5 @@ MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD')
 MYSQL_HOST = os.getenv('MYSQL_HOST', default='db')
 MYSQL_USER = os.getenv('MYSQL_USER')
 MYSQL_DATABASE = os.getenv('MYSQL_DATABASE',  default='spotify_stats')
+
+MYSQL_URL = os.getenv("DB_URL", f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}/{MYSQL_DATABASE}?charset=utf8mb4")

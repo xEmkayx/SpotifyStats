@@ -1,0 +1,398 @@
+/* Design Tokens – dunkleres Preset */
+:root {
+  --brand: #4f8a8b;
+  --brand-strong: #3f6e70;
+  --bg: #060a12;              /* sehr dunkler Seitenhintergrund */
+  --surface: #0f172a;         /* dunkle Kartenfläche */
+  --text: #e5e7eb;            /* Haupttext */
+  --muted: #9ca3af;           /* Sekundärtext */
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow-1: 0 8px 24px rgba(0,0,0,.45);
+  --shadow-2: 0 12px 32px rgba(0,0,0,.6);
+  --border: rgba(255,255,255,.10);      /* klare Trennung */
+  --border-strong: rgba(255,255,255,.16);
+}
+
+/* Grundlayout */
+body { background-color: var(--bg); color: var(--text); }
+a, .nav-link { color: var(--text); }
+.navbar { background-color: #0b1221 !important; border-bottom: 1px solid rgba(255,255,255,.06); }
+.navbar .navbar-brand { font-weight: 700; letter-spacing: .2px; }
+
+/* Cards – klarere Trennung, dunkler */
+.card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  /*box-shadow: var(--shadow-1);*/
+  background-color: var(--surface) !important;
+  color: var(--text);
+}
+.card + .card { margin-top: 1rem; }
+.card:hover {
+    /*box-shadow: var(--shadow-2); */
+    border-color: var(--border-strong);
+    /*transition: box-shadow .2s ease-in-out, border-color .2s;*/
+}
+.card-header {
+  background-color: var(--surface) !important;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+  border-top-left-radius: var(--radius);
+  border-top-right-radius: var(--radius);
+}
+.card-body {
+  background-color: var(--surface) !important;
+  border-bottom-left-radius: var(--radius);
+  border-bottom-right-radius: var(--radius);
+}
+
+/* Buttons */
+.btn,
+.btn:focus,
+.btn:active,
+.btn:focus-visible,
+.btn-check:focus + .btn,
+.btn-check:active + .btn {
+box-shadow: none !important;
+}
+.btn-primary, .btn-outline-primary.active {
+  background-color: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+}
+.btn-primary:hover, .btn-outline-primary.active:hover {
+  background-color: var(--brand-strong);
+  border-color: var(--brand-strong);
+}
+.btn-outline-primary { color: var(--brand); border-color: var(--brand); }
+.btn-outline-primary:hover { color: #fff; }
+
+/* Form/Filter Controls */
+.form-label { display: block; font-weight: 600; color: var(--muted); margin-bottom: .25rem; }
+.form-control, .form-select, .Select-control, .Select-menu-outer {
+  border-radius: var(--radius-sm);
+}
+.Select-control { border-color: #374151; background: var(--surface); color: var(--text); box-shadow: none; }
+.Select-menu-outer { background: var(--surface); color: var(--text); border-color: #374151; }
+
+/* DatePicker – volle Breite, dunkles Styling */
+/*.DateRangePicker, .DateRangePickerInput { width: 100%; }*/
+/*.DateRangePickerInput { border-radius: var(--radius-sm); border: 1px solid #374151; background: var(--surface); }*/
+/*.DateRangePickerInput__withBorder { border: none; }*/
+/*.DateInput { width: 48%; }*/
+/*.DateInput_input {*/
+/*  width: 100%;*/
+/*  background: var(--surface);*/
+/*  color: var(--text);*/
+/*  border: 1px solid #374151;*/
+/*  padding: .45rem .6rem;*/
+/*  border-radius: var(--radius-sm);*/
+/*}*/
+/*.DateRangePickerInput_arrow { color: var(--muted); padding: 0 .25rem; }*/
+/*.DateRangePickerInput_clearDates { color: var(--muted); }*/
+/*.DateRangePickerInput {*/
+/*  border: 1px solid var(--border-strong);*/
+/*  background: var(--surface);*/
+/*  border-radius: var(--radius-sm);*/
+/*  overflow: hidden;                  !* zeigt die runden Ecken wirklich *!*/
+/*}*/
+/*.DateRangePickerInput__withBorder { border: none; }  !* Bootstrap-Default aus *!*/
+/*.DateInput { width: 50%; }*/
+/*.DateInput_input {*/
+/*  width: 100%;*/
+/*  background: transparent;*/
+/*  color: var(#grey);*/
+/*  border: none !important;           !* innere Ränder weg *!*/
+/*  border-radius: 0 !important;       !* keine inneren Ecken *!*/
+/*  padding: .55rem .7rem;*/
+/*}*/
+/*.DateRangePickerInput_arrow {*/
+/*  color: var(--muted);*/
+/*  padding: 0 .4rem;*/
+/*}*/
+/*.DateRangePickerInput_clearDates {*/
+/*  color: var(--muted);*/
+/*  margin: 0 .25rem;*/
+/*}*/
+
+.DateRangePickerInput {
+  background: #ffffff !important;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.DateRangePickerInput__withBorder { border: none; }
+.DateRangePickerInput .DateInput_input,
+.DateRangePickerInput .DateInput_input__focused {
+  color: #0f172a !important;             /* sehr guter Kontrast */
+  -webkit-text-fill-color: #0f172a !important;  /* Safari */
+}
+.DateRangePickerInput .DateInput_input::placeholder {
+  color: #4b5563 !important;              /* dunkleres Grau für Placeholder */
+  opacity: 1;
+}
+.DateRangePickerInput_arrow { color: #6b7280; }
+.DateRangePickerInput_clearDates {
+    color: #6b7280;
+  margin: 0 6px 0 6px !important;  /* weniger Einrückung rechts/links */
+  padding: 0 !important;
+}
+.DateRangePickerInput__showClearDates .DateInput_input {
+  padding-right: 6px !important;   /* Standard ist größer – wir ziehen es zusammen */
+}
+
+/* Slider */
+.rc-slider { padding: 6px 0 12px; }
+.rc-slider-rail { background: #374151; }
+.rc-slider-track { background-color: var(--brand); }
+.rc-slider-handle { border-color: var(--brand); }
+/*.rc-slider-handle:active { box-shadow: 0 0 0 5px rgba(79,138,139,.25); }*/
+
+/* Toggle (Radio-Button-Gruppe) – Padding fixen, „Chip“-Look */
+.card-header .row { align-items: center; }         /* vertikal mittig in Header */
+.radio-group { padding: 0; }
+.radio-group .btn-group { gap: .25rem; }
+.radio-group .btn {
+  padding: .3rem .7rem;           /* kompakter */
+  border-radius: 999px !important;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,.02);
+}
+.radio-group .btn + .btn { margin-left: 0; }       /* durch gap ersetzt */
+.radio-group .btn-outline-primary.active {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+  /*box-shadow: 0 0 0 4px rgba(79,138,139,.18);      !* dezenter Fokus-Ring *!*/
+}
+
+/* Loading Spinner */
+.dash-spinner { align-items: center; }
+.dash-spinner .spinner-border { color: var(--brand); }
+
+/* Plotly – transparente Flächen */
+.js-plotly-plot, .plot-container, .dash-graph { background: transparent !important; }
+.main-svg { border-radius: var(--radius-sm); }
+
+/* Links in Navbar – aktive Farbe */
+a.nav-link.active { color: var(--brand) !important; font-weight: 600; }
+
+/* Abstand unten, damit Inhalte nicht „kleben“ */
+.container, .container-fluid { padding-bottom: 1.25rem; }
+
+.segmented-toggle {
+display: inline-flex;
+padding: 4px;
+border: 1px solid var(--border);
+border-radius: 999px;
+background: rgba(255,255,255,.04);
+}
+.segmented-toggle .btn-group {
+display: flex;
+gap: 4px;
+}
+.segmented-toggle .btn {
+border: 0 !important;
+background: transparent;
+color: var(--muted);
+padding: .34rem .9rem;
+line-height: 1.2;
+border-radius: 999px !important;
+box-shadow: none !important;
+display: inline-flex;
+align-items: center;
+justify-content: center;
+min-width: 90px;      /* gleiche Breite/ruhigere Optik */
+}
+.segmented-toggle .btn:hover {
+background: rgba(255,255,255,.06);
+}
+.segmented-toggle .btn:focus { box-shadow: none !important; }
+.segmented-toggle .btn-check:checked + .btn,
+.segmented-toggle .btn.active {
+background: var(--brand);
+color: #fff;
+box-shadow: none !important;     /* Glow aus */
+}
+/* Falls alte Regeln von früherem Toggle stören: neutralisieren */
+.radio-group .btn-outline-primary.active { box-shadow: none !important; }
+.radio-group .btn { border: 0 !important; }
+
+.sidebar-layout { display: flex; gap: 16px; }
+.sidebar {
+width: 320px; min-width: 240px; max-width: 420px;
+transition: width .2s ease;
+overflow: hidden;  /* Inhalt abschneiden beim Kollaps */
+}
+.sidebar.collapsed { width: 56px; min-width: 56px; }
+.sidebar-header {
+display: flex; align-items: center; justify-content: space-between;
+padding: .5rem .75rem; border: 1px solid var(--border); border-bottom: none;
+border-top-left-radius: var(--radius); border-top-right-radius: var(--radius);
+background: var(--surface);
+}
+.sidebar-body {
+padding: .75rem; border: 1px solid var(--border);
+border-bottom-left-radius: var(--radius); border-bottom-right-radius: var(--radius);
+background: var(--surface);
+}
+.sidebar .sidebar-toggle-btn { padding: .25rem .4rem; color: var(--muted); }
+.sidebar .sidebar-title { font-weight: 600; }
+
+.sidebar.collapsed .hide-when-collapsed { display: none !important; }
+/* Kompletten Body ausblenden, nur Header mit Icons bleibt */
+.sidebar.collapsed .hide-when-collapsed-wrap { display: none !important; }
+
+.sidebar-content { flex: 1; min-width: 0; } /* Graphs dürfen schrumpfen */
+
+/* Optional: leichter Schlagschatten, wenn du magst */
+/*.sidebar, .sidebar-body, .sidebar-header { box-shadow: var(--shadow-1); }*/
+
+/* Toggle-Icon-Richtung */
+.sidebar.collapsed .bi-chevron-left::before { content: "\f285"; } /* bi-chevron-right */
+
+.empty-state {
+border: 1px dashed var(--border);
+border-radius: var(--radius);
+background: rgba(255,255,255,.02);
+color: var(--muted);
+min-height: 320px;
+display: flex; align-items: center; justify-content: center;
+padding: 24px;
+}
+.empty-state .empty-icon {
+font-size: 28px;
+color: var(--muted);
+}
+.empty-state .empty-title { font-weight: 600; color: var(--text); }
+.empty-state .empty-subtitle { font-size: .95rem; }
+
+.card-img-top { border-top-left-radius: var(--radius); border-top-right-radius: var(--radius); }
+.card { border-radius: var(--radius); overflow: hidden; }
+.card-compact .card-body { padding: .5rem; }
+.card-compact .card-footer { padding: .4rem .5rem; font-size: .85rem; }
+.card-compact .fw-semibold { font-size: .95rem; }
+.card-compact .text-muted { font-size: .8rem; }
+.card-compact .card-img-top { /* Bild bleibt quadratisch; Höhe skaliert über Spaltenzahl */ }
+
+.cards-grid { /* Styles kommen inline aus Python; hier nichts nötig */ }
+
+/* Kompaktere Karten */
+.card-compact .card-body { padding: .5rem; }
+.card-compact .card-footer { padding: .4rem .5rem; font-size: .85rem; }
+.card-compact .fw-semibold { font-size: .95rem; }
+.card-compact .text-muted { font-size: .8rem; }
+
+/* Optional: 2 Zeilen Titel */
+.line-clamp-2 {
+display: -webkit-box;
+-webkit-line-clamp: 2;
+-webkit-box-orient: vertical;
+overflow: hidden;
+}
+
+/* Deine vorhandenen Styles können bleiben */
+.card-img-top { border-top-left-radius: var(--radius); border-top-right-radius: var(--radius); }
+.card { border-radius: var(--radius); overflow: hidden; }
+
+.tabs-minimal.nav-tabs {
+border-bottom: 0;                 /* Bootstrap-Linie aus /
+justify-content: center;          / zentriert /
+gap: 48px;                        / Abstand zwischen Tabs */
+}
+
+.tabs-minimal .nav-item { margin: 0; }
+
+.tabs-minimal .nav-link {
+border: 0 !important;
+background: transparent !important;
+color: var(--muted) !important;
+padding: .5rem .25rem;
+font-weight: 600;
+position: relative;               /* für Underline */
+text-align: center;
+}
+
+.tabs-minimal .nav-link:hover {
+color: var(--text) !important;
+}
+
+.tabs-minimal .nav-link.active {
+color: var(--text) !important;
+}
+
+/* Aktiver Indikator als feine Unterstreichung */
+.tabs-minimal .nav-link::after {
+content: "";
+display: block;
+height: 2px;
+width: 0;
+background: var(--brand);
+transition: width .18s ease;
+margin-top: 6px;
+}
+
+.tabs-minimal .nav-link.active::after {
+width: 100%;
+}
+
+/* Falls Bootstrap trotzdem eine Border am aktiven Tab setzt: hart neutralisieren */
+.tabs-minimal .nav-link,
+.tabs-minimal .nav-link.active {
+--bs-nav-tabs-link-active-bg: transparent;
+--bs-nav-tabs-link-active-border-color: transparent;
+--bs-nav-tabs-link-hover-border-color: transparent;
+border-color: transparent !important;
+}
+
+.tabs-header { padding-top: .75rem !important; padding-bottom: .75rem !important; }
+.tabs-header .nav { justify-content: center; }
+
+/* Bootstrap-Tab-Linie im Header ausschalten */
+.card-header .nav-tabs { border-bottom: 0 !important; }
+
+/* Segmented-Look für Tabs im Header */
+.tabs-minimal.nav-tabs {
+display: inline-flex;
+gap: 4px;
+padding: 4px;
+margin: 0 auto;
+border: 1px solid var(--border);
+background: rgba(255,255,255,.04);
+border-radius: 999px;
+}
+.tabs-minimal .nav-link {
+border: 0 !important;
+background: transparent !important;
+color: var(--muted) !important;
+padding: .38rem .9rem;
+line-height: 1.2;
+border-radius: 999px !important;
+}
+.tabs-minimal .nav-link:hover {
+background: rgba(255,255,255,.06) !important;
+color: var(--text) !important;
+}
+.tabs-minimal .nav-link.active {
+background: var(--brand) !important;
+color: #fff !important;
+box-shadow: none !important;
+}
+
+/* Falls card-header-tabs eigene Offsets setzt: neutralisieren */
+.card-header .nav-tabs.card-header-tabs { margin: 0 !important; }
+.nav-tabs {
+    box-shadow: none !important;
+}
+
+/* Sicherheitsnetz gegen helle Bootstrap-Defaults */
+.card-header .nav-tabs .nav-link,
+.card-header .nav-tabs .nav-link.active {
+--bs-nav-tabs-link-active-bg: transparent;
+--bs-nav-tabs-link-active-border-color: transparent;
+--bs-nav-tabs-link-hover-border-color: transparent;
+background-color: transparent !important;
+border-color: transparent !important;
+}

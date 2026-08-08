@@ -3,7 +3,7 @@ import pandas as pd
 
 
 def date_mask(start_date: str, end_date: str, df: pd.DataFrame):
-    df['Played at'] = pd.to_datetime(df['Played at'], format='%Y-%m-%dT%H:%M')
+    df['Played at'] = pd.to_datetime(df['Played at'], format='mixed')
     mask = (df['Played at'] >= start_date) & (df['Played at'] <= end_date)
     return mask
 
@@ -22,7 +22,7 @@ def get_top_songs_df(df: pd.DataFrame, start_date: str = str(date(2010, 1, 1)), 
              'Album': 'first', 'Album-ID': 'first', 'Song Length': 'first'})
 
         counted = gr.value_counts('Song-ID').rename({1: 'Song-ID', 2: 'Stream Count'}).sort_index().reset_index()
-        counted.set_axis(['Song-ID', 'Stream Count'], axis=1, inplace=True)
+        counted.columns = ['Song-ID', 'Stream Count']
         rest = gr.reset_index().drop('Played at', axis=1).drop_duplicates('Song-ID').sort_values('Song-ID')
         df_combined = pd.merge(counted, rest).sort_values('Stream Count', ascending=False)
     return df_combined
@@ -35,7 +35,7 @@ def get_top_artists(df: pd.DataFrame, start_date: str = str(date(2010, 1, 1)), e
     gr = ndf.groupby(['Artist', 'Artist-ID'], as_index=False).size()
     df_sorted = gr.sort_values(by=['size'], ascending=False)
     df_sorted.rename({1: 'Artist', 2: 'Artist-ID', 3: 'Stream Count'})
-    df_sorted.set_axis(['Artist', 'Artist-ID', 'Stream Count'], axis=1, inplace=True)
+    df_sorted.columns = ['Artist', 'Artist-ID', 'Stream Count']
 
     return df_sorted
 
@@ -48,7 +48,7 @@ def get_top_albums(df: pd.DataFrame, start_date: str = str(date(2010, 1, 1)), en
                                        'Artist': ', '.join, 'Artist-ID': ', '.join,
                                        })
     counted = gr.value_counts('Album-ID').rename({1: 'Album-ID', 2: 'Stream Count'}).sort_index().reset_index()
-    counted.set_axis(['Album-ID', 'Stream Count'], axis=1, inplace=True)
+    counted.columns = ['Album-ID', 'Stream Count']
     rest = gr.reset_index().drop('Played at', axis=1).drop_duplicates('Album-ID').sort_values('Album-ID')
     df_combined = pd.merge(counted, rest).sort_values('Stream Count', ascending=False)
     return df_combined
@@ -74,7 +74,7 @@ def normalize_to_minutes(df: pd.DataFrame) -> pd.DataFrame:
     gr['Song Length'] = gr['Song Length'].dt.time
     gr['Song Length'] = gr['Song Length'].astype(str)
 
-    counted.set_axis(['Song-ID', 'Stream Count'], axis=1, inplace=True)
+    counted.columns = ['Song-ID', 'Stream Count']
     rest = gr.reset_index().drop('Played at', axis=1).drop_duplicates('Song-ID').sort_values('Song-ID')
     df_combined = pd.merge(counted, rest).sort_values('Stream Count', ascending=False)
 
@@ -96,3 +96,12 @@ def get_played_at_table(df: pd.DataFrame, start_date: str = str(date(2010, 1, 1)
 
     gr = gr.reset_index()[::-1]
     return gr
+
+
+def format_to_timedelta(time_str):
+    if ':' not in time_str:
+        return '00:00:' + time_str
+    elif time_str.count(':') == 1:
+        return '00:' + time_str
+    else:
+        return time_str
