@@ -1,8 +1,7 @@
 from datetime import date
 from typing import Tuple, Optional
 
-from auth import spotify_auth_manager
-from auth.spotify_auth_manager import SpotifyServerAuth
+from frontend_new.services.spotify_images import spotify_client
 from frontend_new.services.top_songs import top_song_ids
 
 
@@ -24,8 +23,10 @@ def create_playlist_from_current_filters(
         return False, "Keine Songs für den aktuellen Zeitraum/Metrik gefunden.", None
 
     # 2) Spotify Client
-    auth = SpotifyServerAuth()
-    sp = auth.get_authenticated_spotify_client()
+    try:
+        sp = spotify_client()
+    except Exception as e:
+        return False, str(e), None
 
     # 3) User ermitteln (falls Username nicht zentral konfiguriert ist)
     try:

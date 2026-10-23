@@ -39,7 +39,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: .
-          file: ./frontend/Dockerfile-frontend
+          file: ./frontend_new/Dockerfile-frontend
           push: true
           tags: |
             ghcr.io/${{ env.lowercase_owner }}/spotify-stats/frontend:${{ github.sha }}

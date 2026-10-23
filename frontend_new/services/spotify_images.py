@@ -10,9 +10,22 @@ def _chunks(seq, size):
         yield seq[i:i+size]
 
 
-def _sp():
+def spotify_client():
     auth = SpotifyServerAuth()
+    # Ohne gespeichertes Token würde spotipy per input() nach der Redirect-URL fragen
+    # und den Request-Thread dauerhaft blockieren -> lieber sauber abbrechen.
+    if not auth.oauth.get_cached_token():
+        raise RuntimeError("Kein Spotify-Token vorhanden (Autorisierung über das Backend nötig).")
     return auth.get_authenticated_spotify_client()
+
+
+def images_or_empty(fetch, ids) -> Dict[str, str]:
+    # Bilder sind optional: Fehler nicht cachen (memoize speichert nur Erfolge), Seite ohne Bilder rendern
+    try:
+        return fetch(tuple(ids))
+    except Exception as e:
+        print(f"Spotify-Bilder nicht verfügbar: {e}")
+        return {}
 
 
 @cache.memoize(timeout=86400)  # 24h
@@ -20,7 +33,7 @@ def track_images(ids_tuple: tuple) -> Dict[str, str]:
     ids = list(dict.fromkeys([i for i in ids_tuple if i]))  # unique, keep order
     if not ids: return {}
     out = {}
-    sp = _sp()
+    sp = spotify_client()
     for batch in _chunks(ids, 50):
         res = sp.tracks(batch)
         for tr in res.get("tracks", []):
@@ -33,7 +46,7 @@ def artist_images(ids_tuple: tuple) -> Dict[str, str]:
     ids = list(dict.fromkeys([i for i in ids_tuple if i]))
     if not ids: return {}
     out = {}
-    sp = _sp()
+    sp = spotify_client()
     for batch in _chunks(ids, 50):
         res = sp.artists(batch)
         for ar in res.get("artists", []):
@@ -45,7 +58,7 @@ def album_images(ids_tuple: tuple) -> Dict[str, str]:
     ids = list(dict.fromkeys([i for i in ids_tuple if i]))
     if not ids: return {}
     out = {}
-    sp = _sp()
+    sp = spotify_client()
     for batch in _chunks(ids, 20):
         res = sp.albums(batch)
         for al in res.get("albums", []):

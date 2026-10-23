@@ -396,3 +396,8 @@ box-shadow: none !important;
 background-color: transparent !important;
 border-color: transparent !important;
 }
+/* Kompakter Segmented-Toggle (z. B. 3 Optionen in der Sidebar) */
+.segmented-toggle.compact .btn { min-width: 0; padding: .34rem .75rem; }
+
+/* ListGroups (Settings, Song-KPIs) an dunkle Karten anpassen */
+.list-group-item { background-color: transparent !important; color: var(--text) !important; border-color: var(--border) !important; }

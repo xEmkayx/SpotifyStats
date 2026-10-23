@@ -309,3 +309,105 @@ def build_interarrival_hist_figure(gaps_df: pd.DataFrame, dark: bool):
         margin=dict(l=10, r=10, t=50, b=10)
     )
     return fig
+
+
+SUNBURST_PATHS = {
+    "artist-song": (["artists", "song_name"], "Artist → Song"),
+    "album-song": (["album_name", "song_name"], "Album → Song"),
+    "artist-album-song": (["artists", "album_name", "song_name"], "Artist → Album → Song"),
+}
+
+
+def build_sunburst_figure(df: pd.DataFrame, hierarchy: str, metric: str, dark: bool):
+    if df is None or df.empty:
+        fig = go.Figure()
+        fig.update_layout(title="Keine Daten im gewählten Zeitraum.", height=500)
+        return fig
+    path, label = SUNBURST_PATHS.get(hierarchy, SUNBURST_PATHS["artist-song"])
+    df = df.copy()
+    for col in path:
+        df[col] = df[col].fillna("Unbekannt").replace("", "Unbekannt")
+    if metric == "minutes":
+        df["value"] = (df["seconds_total"].astype(float) / 60).round(1)
+        value_label = "Minuten"
+    else:
+        df["value"] = df["plays"].astype(int)
+        value_label = "Streams"
+    fig = px.sunburst(df, path=path, values="value", color="value",
+                      color_continuous_scale="Tealgrn",
+                      title=f"{label} ({value_label}, Top {len(df)} Songs)")
+    fig.update_traces(hovertemplate="<b>%{label}</b><br>" + value_label + ": %{value}<extra></extra>")
+    fig.update_layout(height=850, margin=dict(l=10, r=10, t=60, b=10), coloraxis_showscale=False,
+                      uirevision=f"sunburst-{hierarchy}")
+    return fig
+
+
+def build_entity_songs_figure(df: pd.DataFrame, metric: str, title: str, dark: bool):
+    if df is None or df.empty:
+        fig = go.Figure()
+        fig.update_layout(title="Keine Treffer.", height=400)
+        return fig
+    df = df.copy()
+    if metric == "minutes":
+        df["value"] = (df["seconds_total"].astype(float) / 60).round(1)
+        x_title = "Gestreamte Minuten"
+    else:
+        df["value"] = df["plays"].astype(int)
+        x_title = "Anzahl Streams"
+    # Gleiche Songtitel (z. B. Remaster) über die ID unterscheidbar halten
+    df["label"] = df["song_name"] + " · " + df["artists"].fillna("")
+    df = df.sort_values("value", ascending=True)
+    fig = px.bar(df, x="value", y="label", orientation="h", title=title,
+                 custom_data=["song_name", "artists", "album_name", "plays", "song_id"])
+    fig.update_traces(hovertemplate="<b>%{customdata[0]}</b><br>Artists: %{customdata[1]}"
+                                    "<br>Album: %{customdata[2]}<br>Streams: %{customdata[3]}"
+                                    "<br>ID: %{customdata[4]}<extra></extra>")
+    fig.update_layout(xaxis_title=x_title, yaxis_title="", height=max(400, 24 * len(df) + 120),
+                      margin=dict(l=10, r=10, t=60, b=10), uirevision="entity-songs")
+    return fig
+
+
+def build_streams_timeline_figure(daily_df: pd.DataFrame, metric: str, dark: bool):
+    fig = go.Figure()
+    if daily_df is None or daily_df.empty:
+        fig.update_layout(title="Streams über Zeit (keine Daten)", height=380)
+        return fig
+    df = daily_df.set_index("day").sort_index()
+    span_days = (df.index.max() - df.index.min()).days
+    # Lange Zeiträume wochenweise, sonst wird die Linie unlesbar
+    if span_days > 120:
+        df = df.resample("W-MON", label="left", closed="left").sum()
+        bucket = "Woche"
+    else:
+        df = df.asfreq("D", fill_value=0)
+        bucket = "Tag"
+    if metric == "minutes":
+        y = (df["seconds_total"] / 60).round(1)
+        y_title = f"Minuten pro {bucket}"
+    else:
+        y = df["plays"]
+        y_title = f"Streams pro {bucket}"
+    fig.add_trace(go.Bar(x=df.index, y=y, name=y_title, marker_color="#4f8a8b"))
+    fig.add_trace(go.Scatter(x=df.index, y=y.rolling(4, min_periods=1).mean(), name="Ø gleitend (4)",
+                             mode="lines", line=dict(color="#f28e2b", width=2)))
+    fig.update_layout(title=f"Streams über Zeit (pro {bucket})", yaxis_title=y_title, height=380,
+                      margin=dict(l=10, r=10, t=50, b=10), uirevision="timeline",
+                      legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0))
+    return fig
+
+
+def build_weekday_hour_figure(wh_df: pd.DataFrame, dark: bool):
+    weekday_labels = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
+    grid = pd.DataFrame(0, index=range(7), columns=range(24))
+    if wh_df is not None and not wh_df.empty:
+        pv = wh_df.pivot_table(index="weekday", columns="hour", values="plays", aggfunc="sum", fill_value=0)
+        grid = grid.add(pv, fill_value=0).astype(int)
+    fig = go.Figure(go.Heatmap(
+        z=grid.values, x=[f"{h:02d}" for h in grid.columns], y=weekday_labels,
+        colorscale="Tealgrn", hovertemplate="%{y}, %{x} Uhr<br>Streams: %{z}<extra></extra>",
+        colorbar=dict(title="Streams", thickness=10, len=0.8)
+    ))
+    fig.update_layout(title="Wann wird gehört? (Wochentag × Stunde)", height=340,
+                      xaxis_title="Stunde", yaxis=dict(autorange="reversed"),
+                      margin=dict(l=10, r=10, t=50, b=10))
+    return fig

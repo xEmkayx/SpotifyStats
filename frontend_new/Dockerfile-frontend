@@ -1,0 +1,26 @@
+FROM python:3.12-slim
+WORKDIR /app
+ENV PYTHONPATH=/app \
+    PYTHONUNBUFFERED=1 \
+    DASH_HOST=0.0.0.0 \
+    DASH_PORT=8050 \
+    GUNICORN_WORKERS=2 \
+    GUNICORN_THREADS=4
+
+# Build context is the repo root (context: .), so paths are repo-relative
+COPY frontend_new/requirements-frontend.txt .
+RUN pip install --no-cache-dir -r requirements-frontend.txt
+
+COPY common/ ./common
+COPY auth/ ./auth
+COPY frontend_new/ ./frontend_new
+
+EXPOSE 8050
+# Mehrere Worker/Threads: ein langsamer Request blockiert nicht mehr die ganze App.
+# Der FileSystemCache wird von allen Workern geteilt.
+CMD gunicorn frontend_new.app:server \
+    --bind ${DASH_HOST}:${DASH_PORT} \
+    --workers ${GUNICORN_WORKERS} \
+    --threads ${GUNICORN_THREADS} \
+    --timeout 120 \
+    --access-logfile -

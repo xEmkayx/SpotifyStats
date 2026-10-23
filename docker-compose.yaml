@@ -26,14 +26,29 @@ services:
     ports:
       - "9876:9876"
 
-#  frontend:
-#    build:
-#      context: .
-#      dockerfile: frontend/Dockerfile-frontend
-#    volumes:
-#      - data-volume:/app/data
-#    networks:
-#      - backend-network
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend_new/Dockerfile-frontend
+    volumes:
+      # Spotify-Token-Cache wird mit dem Backend geteilt (Bilder, Playlists)
+      - data-volume:/app/data
+    depends_on:
+      - db
+    restart: on-failure
+    environment:
+      SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID}
+      SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET}
+      SPOTIFY_REDIRECT_URI: ${SPOTIFY_REDIRECT_URI}
+      TOKEN_CACHE_FILE_PATH: ${TOKEN_CACHE_FILE_PATH}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_HOST: ${MYSQL_HOST}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    networks:
+      - backend-network
+    ports:
+      - "8050:8050"
 
   db:
     image: mysql:latest

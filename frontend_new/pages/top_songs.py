@@ -16,7 +16,7 @@ from frontend_new.services.summary import cached_total_listening_seconds, format
 from frontend_new.services.top_songs import cached_top_songs
 
 SCOPE = "top-songs"
-dash.register_page(__name__, path="/top-songs", name="Top Songs")
+dash.register_page(__name__, path="/top-songs", name="Top Songs", group="Charts", order=10)
 
 
 def layout():

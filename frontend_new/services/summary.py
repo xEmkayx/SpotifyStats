@@ -1,22 +1,21 @@
 from sqlalchemy import text
 
 from frontend_new.core.db import engine
-from frontend_new.services.sql_fragments import played_at_cast_expr, length_seconds_expr
+from frontend_new.services.sql_fragments import length_seconds_expr, played_at_range_expr, range_params
 from frontend_new.core.extensions import cache
 
-CAST_EXPR = played_at_cast_expr()
 LEN_SEC = length_seconds_expr("s")
 
 TOTAL_LISTEN_SQL = f"""
 SELECT COALESCE(SUM({LEN_SEC}), 0) AS seconds_total
 FROM stream_history sh
 JOIN songs s ON s.song_id = sh.song_id
-WHERE {CAST_EXPR} BETWEEN :start_dt AND :end_dt
+WHERE {played_at_range_expr()}
 """
 
 def _fetch_total_listening_seconds(start_dt: str, end_dt: str) -> int:
     with engine.begin() as conn:
-        row = conn.execute(text(TOTAL_LISTEN_SQL), {"start_dt": start_dt, "end_dt": end_dt}).mappings().first()
+        row = conn.execute(text(TOTAL_LISTEN_SQL), range_params(start_dt, end_dt)).mappings().first()
         return int(row["seconds_total"] or 0)
 
 

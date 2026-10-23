@@ -12,7 +12,7 @@ from frontend_new.services.summary import cached_total_listening_seconds, format
 from frontend_new.services.top_artists import cached_top_artists
 
 SCOPE = "top-artists"
-dash.register_page(__name__, path="/top-artists", name="Top Artists")
+dash.register_page(__name__, path="/top-artists", name="Top Artists", group="Charts", order=11)
 
 def layout():
     filters = build_filter_panel(

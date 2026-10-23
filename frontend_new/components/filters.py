@@ -60,12 +60,17 @@ def date_range(scope: str, label="Zeitraum", default_days=90):
 
 
 def topn_slider(scope: str, label="Anzahl Top N", default=30, minv=10, maxv=100, step=10):
+    if maxv <= 100:
+        mark_vals = [i for i in [10, 20, 30, 40, 50, 75, 100] if minv <= i <= maxv]
+    else:
+        # Große Bereiche: 5 gleichmäßige Marks statt der festen Liste
+        mark_vals = [minv + round((maxv - minv) * k / 4 / step) * step for k in range(5)]
     return html.Div([
     dbc.Label(label),
     dcc.Slider(
     id=fid(scope, "top_n"),
     min=minv, max=maxv, step=step, value=default,
-    marks={i: str(i) for i in [10, 20, 30, 40, 50, 75, 100] if minv <= i <= maxv}
+    marks={i: str(i) for i in mark_vals}
     )
     ], className="mt-3")
 

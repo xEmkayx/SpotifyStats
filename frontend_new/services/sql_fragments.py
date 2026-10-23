@@ -1,4 +1,4 @@
-import os
+from datetime import date, timedelta
 
 from frontend_new.config import DB_DIALECT
 
@@ -63,6 +63,69 @@ def album_artists_agg_left_join(album_alias="al", join_alias="aa"):
     """
 
 
-def day_bucket_expr():
-    # DATE() funktioniert in Postgres und MySQL auf einem Timestamp
-    return f"DATE({played_at_cast_expr()})"
+def day_bucket_expr(alias="sh"):
+    # played_at beginnt immer mit "YYYY-MM-DD" -> kein Parsen pro Zeile nötig
+    return f"LEFT({alias}.played_at, 10)"
+
+
+def hour_expr(alias="sh"):
+    # "YYYY-MM-DD HH:..." -> HH
+    if DB_DIALECT.lower() == "postgres":
+        return f"CAST(SUBSTRING({alias}.played_at, 12, 2) AS INTEGER)"
+    return f"CAST(SUBSTRING({alias}.played_at, 12, 2) AS UNSIGNED)"
+
+
+def weekday_expr(alias="sh"):
+    # 0 = Montag .. 6 = Sonntag
+    if DB_DIALECT.lower() == "postgres":
+        return f"(EXTRACT(ISODOW FROM CAST(LEFT({alias}.played_at, 10) AS DATE)) - 1)"
+    return f"WEEKDAY(LEFT({alias}.played_at, 10))"
+
+
+def played_at_range_expr(alias="sh"):
+    # played_at ist ein varchar mit ISO-Präfix ("YYYY-MM-DD HH:MM[:SS[.ffffff]]"),
+    # lexikografisch also gleich chronologisch. Der direkte Vergleich nutzt den
+    # PK-Index statt STR_TO_DATE für jede Zeile auszuwerten.
+    return f"{alias}.played_at >= :start_dt AND {alias}.played_at < :end_dt"
+
+
+def range_params(start, end) -> dict:
+    # Akzeptiert "YYYY-MM-DD", "YYYY-MM-DD HH:MM" oder date; Ende ist inklusive des ganzen Tages
+    start_day = str(start)[:10]
+    end_excl = date.fromisoformat(str(end)[:10]) + timedelta(days=1)
+    return {"start_dt": start_day, "end_dt": end_excl.isoformat()}
+
+
+def artists_of_song_expr(song_col="s.song_id"):
+    # Korrelierte Subquery: nur sinnvoll, nachdem auf Top-N limitiert wurde
+    if DB_DIALECT.lower() == "postgres":
+        return (f"(SELECT string_agg(DISTINCT ar.artist_name, ', ') FROM art_songs asg "
+                f"JOIN artists ar ON ar.artist_id = asg.artist_id WHERE asg.song_id = {song_col})")
+    return (f"(SELECT GROUP_CONCAT(DISTINCT ar.artist_name ORDER BY ar.artist_name SEPARATOR ', ') "
+            f"FROM art_songs asg JOIN artists ar ON ar.artist_id = asg.artist_id WHERE asg.song_id = {song_col})")
+
+
+def artists_of_album_expr(album_col="al.album_id"):
+    if DB_DIALECT.lower() == "postgres":
+        return (f"(SELECT string_agg(DISTINCT ar.artist_name, ', ') FROM album_artists aa "
+                f"JOIN artists ar ON ar.artist_id = aa.artist_id WHERE aa.album_id = {album_col})")
+    return (f"(SELECT GROUP_CONCAT(DISTINCT ar.artist_name ORDER BY ar.artist_name SEPARATOR ', ') "
+            f"FROM album_artists aa JOIN artists ar ON ar.artist_id = aa.artist_id WHERE aa.album_id = {album_col})")
+
+
+def plays_per_song_sql(extra_where: str = "", extra_join: str = "") -> str:
+    # Plays + Sekunden pro Song im Zeitraum (played_at ist PK -> COUNT(*) ohne DISTINCT)
+    where = f"{played_at_range_expr()}" + (f" AND ({extra_where})" if extra_where else "")
+    return f"""
+    SELECT sh.song_id, COUNT(*) AS plays, COUNT(*) * MAX({length_seconds_expr("s")}) AS seconds_total
+    FROM stream_history sh
+    JOIN songs s ON s.song_id = sh.song_id
+    {extra_join}
+    WHERE {where}
+    GROUP BY sh.song_id
+    """
+
+
+def order_column(metric: str) -> str:
+    # Nur feste Spaltennamen in ORDER BY (kein User-Input im SQL)
+    return "seconds_total" if (metric or "plays").lower() == "minutes" else "plays"

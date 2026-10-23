@@ -12,7 +12,7 @@ from frontend_new.services.song_heatmap import cached_daily_song_counts
 from frontend_new.services.song_search import search_songs, get_song_option_by_id
 
 SCOPE = "song-heatmap"
-dash.register_page(__name__, path="/song-heatmap", name="Song Heatmap")
+dash.register_page(__name__, path="/song-heatmap", name="Song Heatmap", group="Analyse", order=24)
 
 
 def _year_options(n=6):

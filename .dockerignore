@@ -1,0 +1,17 @@
+.git
+old.git
+venv
+envv
+.idea
+.vscode
+.run
+.claude
+**/__pycache__
+**/.cache
+.cache
+cache
+logs
+temp_files
+misc
+.scannerwork
+.env

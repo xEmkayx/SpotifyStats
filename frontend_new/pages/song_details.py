@@ -20,7 +20,7 @@ from frontend_new.services.song_dynamics import (
 )
 
 SCOPE = "song-details"
-dash.register_page(__name__, path="/song-details", name="Song Details")
+dash.register_page(__name__, path="/song-details", name="Song Details", group="Analyse", order=23)
 
 
 def _year_options(n=6):

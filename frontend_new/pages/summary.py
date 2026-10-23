@@ -10,13 +10,16 @@ from frontend_new.components.filters import (
     build_filter_panel, date_range, quick_ranges, topn_slider, metric_toggle, fid, qid, aid, mid, catid, sidebar_id,
     stid, siid, make_sidebar_layout
 )
+from frontend_new.components.playlist import playlist_modal, playlist_status, playlist_button, pmodal, pbtn, pconfirm, \
+    pstatus, pname, ppublic
 from frontend_new.components.summaries import listening_time_summary, sid as summary_id
-from frontend_new.services.spotify_images import track_images, artist_images, album_images
+from frontend_new.services.spotify_playlist import create_playlist_from_current_filters
+from frontend_new.services.spotify_images import track_images, artist_images, album_images, images_or_empty
 from frontend_new.services.summary import cached_total_listening_seconds, format_duration_de
 from frontend_new.services.summary_data import top_songs_data, top_artists_data, top_albums_data
 
 SCOPE = "summary"
-dash.register_page(__name__, path="/summary", name="Summary")
+dash.register_page(__name__, path="/summary", name="Summary", group="Charts", order=13)
 
 
 def layout():
@@ -46,6 +49,9 @@ def layout():
 
     right = [
         listening_time_summary(SCOPE),
+        playlist_modal(SCOPE),
+        playlist_status(SCOPE),
+        html.Div(playlist_button(SCOPE, label="Top-Songs als Playlist speichern"), className="mb-3"),
         dbc.Card([
             # dbc.CardHeader(
             #     dbc.Row([
@@ -135,7 +141,7 @@ def update_cards(n_apply, category, metric, start_date, end_date, top_n, cache_v
             df = top_artists_data(start_dt, end_dt, top_n, metric, int(cache_ver or 0))
             if df.empty: return empty_state("Keine Artists im Zeitraum", "Filter anpassen.", "bi bi-person")
             # Bilder (Batch)
-            img_map = artist_images(tuple(df["artist_id"].tolist()))
+            img_map = images_or_empty(artist_images, df["artist_id"].tolist())
             df["image_url"] = df["artist_id"].map(img_map).fillna("")
             items = map_artist_items(df)
             return cards_grid(items, "artists")
@@ -143,7 +149,7 @@ def update_cards(n_apply, category, metric, start_date, end_date, top_n, cache_v
         elif category == "albums":
             df = top_albums_data(start_dt, end_dt, top_n, metric, int(cache_ver or 0))
             if df.empty: return empty_state("Keine Alben im Zeitraum", "Filter anpassen.", "bi bi-disc")
-            img_map = album_images(tuple(df["album_id"].tolist()))
+            img_map = images_or_empty(album_images, df["album_id"].tolist())
             df["image_url"] = df["album_id"].map(img_map).fillna("")
             items = map_album_items(df)
             return cards_grid(items, "albums")
@@ -151,10 +157,50 @@ def update_cards(n_apply, category, metric, start_date, end_date, top_n, cache_v
         else:  # songs
             df = top_songs_data(start_dt, end_dt, top_n, metric, int(cache_ver or 0))
             if df.empty: return empty_state("Keine Songs im Zeitraum", "Filter anpassen.", "bi bi-music-note")
-            img_map = track_images(tuple(df["song_id"].tolist()))
+            img_map = images_or_empty(track_images, df["song_id"].tolist())
             df["image_url"] = df["song_id"].map(img_map).fillna("")
             items = map_song_items(df)
             return cards_grid(items, "songs")
 
     except Exception as e:
         return empty_state("Fehler beim Laden", str(e), "bi bi-exclamation-triangle")
+
+
+@callback(
+Output(pmodal(SCOPE), "is_open"),
+Input(pbtn(SCOPE), "n_clicks"),
+Input({"type":"modal-cancel","scope":SCOPE}, "n_clicks"),
+Input(pconfirm(SCOPE), "n_clicks"),
+State(pmodal(SCOPE), "is_open"),
+)
+def toggle_playlist_modal(n_open, n_cancel, n_confirm, is_open):
+    if any([n_open, n_cancel, n_confirm]):
+        return not bool(is_open)
+    return is_open
+
+
+@callback(
+Output(pstatus(SCOPE), "children"),
+Input(pconfirm(SCOPE), "n_clicks"),
+State(pname(SCOPE), "value"),
+State(ppublic(SCOPE), "value"),
+State(fid(SCOPE, "date"), "start_date"),
+State(fid(SCOPE, "date"), "end_date"),
+State(fid(SCOPE, "top_n"), "value"),
+State(mid(SCOPE), "value"),
+State("cache-version", "data"),
+prevent_initial_call=True
+)
+def on_create_playlist(n, name, public, start_date, end_date, top_n, metric, cache_ver):
+    if not n:
+        return no_update
+    if not start_date or not end_date:
+        return dbc.Alert("Bitte zuerst einen gültigen Zeitraum wählen.", color="warning", duration=4000)
+    ok, msg, url = create_playlist_from_current_filters(
+        start_date=start_date, end_date=end_date, metric=(metric or "plays"), top_n=int(top_n or 24),
+        cache_version=int(cache_ver or 0), playlist_name=name, public=bool(public)
+    )
+    if ok:
+        link = html.A("In Spotify öffnen", href=url, target="_blank", className="ms-2") if url else ""
+        return dbc.Alert([msg, " ", link], color="success", duration=6000, is_open=True)
+    return dbc.Alert(msg, color="danger", duration=8000, is_open=True)

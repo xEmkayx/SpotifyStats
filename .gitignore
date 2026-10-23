@@ -229,4 +229,4 @@ fabric.properties
 /.scannerwork
 !/.scannerwork/
 ./sonar-project.properties
-/cache/
+/cache//frontend_new/.cache/
