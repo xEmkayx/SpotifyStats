@@ -15,23 +15,6 @@ from frontend_new.services.versions import song_group_ids
 
 # Hilfsfunktionen
 
-def _parse_song_length_to_sec(s: Optional[str]) -> int:
-    # Erwartet "MM:SS" oder "HH:MM:SS"
-    if not s:
-        return 0
-    parts = s.split(":")
-    try:
-        if len(parts) == 2:
-            m, sec = int(parts[0]), int(parts[1])
-            return m * 60 + sec
-        if len(parts) == 3:
-            h, m, sec = int(parts[0]), int(parts[1]), int(parts[2])
-            return h * 3600 + m * 60 + sec
-    except Exception:
-        return 0
-    return 0
-
-
 @dataclass
 class SongMeta:
     song_id: str
@@ -52,7 +35,7 @@ def song_meta(song_id: str) -> SongMeta | None:
         s.album_id,                  -- NEU
         al.album_name,
         COALESCE(aa.artists, '') AS artists,
-        s.song_length
+        s.duration_ms
     FROM songs s
     LEFT JOIN albums al ON al.album_id = s.album_id
     LEFT JOIN (
@@ -69,7 +52,7 @@ def song_meta(song_id: str) -> SongMeta | None:
     if not row:
         return None
 
-    length_sec = _parse_song_length_to_sec(row.get("song_length"))
+    length_sec = int(round((row.get("duration_ms") or 0) / 1000))
 
     # Bild laden: zuerst Track, dann Album (Fallback)
     img_url = ""
@@ -97,7 +80,7 @@ def song_meta(song_id: str) -> SongMeta | None:
 def _fetch_timestamps(song_id: str) -> pd.Series:
     # Roh-Timestamps (als echte DATETIME) aller Versionen des Songs als Pandas Series
     _, ids = song_group_ids(song_id)
-    cast_expr = played_at_cast_expr()  # nutzt Sekunden + Mikrosekunden
+    cast_expr = played_at_cast_expr()  # Ortszeit
     sql = f"""
     SELECT {cast_expr} AS ts
     FROM stream_history sh

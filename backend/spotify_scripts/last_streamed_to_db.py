@@ -29,15 +29,15 @@ def import_items(items: list) -> dict:
 
     with engine.begin() as conn:
         catalog = apply_tracks(conn, [it["track"] for it in items], source="import")
-        streams = [{"played_at": str(lsm.format_played_at(it["played_at"])), "song_id": it["track"]["id"]}
+        streams = [{"played_at": lsm.format_played_at(it["played_at"]), "song_id": it["track"]["id"]}
                    for it in items]
         stmt = text("SELECT played_at FROM stream_history WHERE played_at IN :ids") \
             .bindparams(bindparam("ids", expanding=True))
         known = {r[0] for r in conn.execute(stmt, {"ids": [s["played_at"] for s in streams]})}
         new_streams = [s for s in streams if s["played_at"] not in known]
         if new_streams:
-            conn.execute(text("INSERT INTO stream_history (played_at, song_id) VALUES (:played_at, :song_id)"),
-                         new_streams)
+            conn.execute(text("INSERT INTO stream_history (played_at, song_id, source) "
+                              "VALUES (:played_at, :song_id, 'api')"), new_streams)
     for s in new_streams:
         logging.info(f'Stream {s["played_at"]}: {s["song_id"]}')
     return {"streams_new": len(new_streams), "songs_new": catalog["songs_new"]}

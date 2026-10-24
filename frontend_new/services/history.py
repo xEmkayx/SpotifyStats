@@ -8,7 +8,7 @@ from frontend_new.core.db import engine
 from frontend_new.core.extensions import cache
 from frontend_new.services.song_search import _escape_like
 from frontend_new.services.sql_fragments import (
-    played_at_range_expr, range_params, length_seconds_expr, artists_of_song_expr
+    played_at_range_expr, range_params, length_seconds_expr, artists_of_song_expr, local_time_expr
 )
 
 LEN_SEC = length_seconds_expr("s")
@@ -58,11 +58,12 @@ def history_page(start_date: str, end_date: str, search: str, page: int, page_si
     search = (search or "").strip()
     sql = f"""
     SELECT
-        LEFT(sh.played_at, 19) AS played_at,
+        DATE_FORMAT({local_time_expr()}, '%Y-%m-%d %H:%i:%s') AS played_at,
         s.song_name,
         COALESCE({artists_of_song_expr("sh.song_id")}, '') AS artists,
         al.album_name,
-        s.song_length,
+        CONCAT(FLOOR(s.duration_ms / 60000), ':', LPAD(MOD(FLOOR(s.duration_ms / 1000), 60), 2, '0'))
+            AS song_length,
         sh.song_id
     FROM stream_history sh
     JOIN songs s ON s.song_id = sh.song_id

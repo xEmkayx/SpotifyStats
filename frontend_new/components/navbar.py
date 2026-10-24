@@ -5,7 +5,7 @@ from dash import html
 import dash_bootstrap_components as dbc
 
 # Reihenfolge der Dropdown-Gruppen (Seiten setzen group=... in register_page)
-GROUP_ORDER = ["Charts", "Analyse"]
+GROUP_ORDER = ["Charts", "Analyse", "Bibliothek"]
 
 
 def make_navbar():

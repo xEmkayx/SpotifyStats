@@ -12,12 +12,6 @@ from sqlalchemy import text, bindparam
 MAX_VALUE_LEN = 500
 
 
-def format_length(duration_ms: int) -> str:
-    # "MM:SS" wie bisher in songs.song_length (Minuten werden nicht bei 60 abgeschnitten)
-    total = int(round((duration_ms or 0) / 1000))
-    return f"{total // 60:02d}:{total % 60:02d}"
-
-
 def _clip(value):
     if value is None:
         return None
@@ -126,13 +120,13 @@ def apply_tracks(conn, tracks: list, source: str) -> dict:
             if (old[1], old[2], old[3], old[4]) == (new["name"], new["album"], isrc, new["duration"]):
                 continue
             upd_count += 1
-        rows.append({"id": sid, **new, "length": format_length(new["duration"])})
+        rows.append({"id": sid, **new, "duration": new["duration"] or 0})
     if rows:
         conn.execute(text("""
-            INSERT INTO songs (song_id, song_name, album_id, song_length, isrc, duration_ms)
-            VALUES (:id, :name, :album, :length, :isrc, :duration)
+            INSERT INTO songs (song_id, song_name, album_id, isrc, duration_ms)
+            VALUES (:id, :name, :album, :isrc, :duration)
             ON DUPLICATE KEY UPDATE song_name = VALUES(song_name), album_id = VALUES(album_id),
-                song_length = VALUES(song_length), isrc = COALESCE(VALUES(isrc), isrc),
+                isrc = COALESCE(VALUES(isrc), isrc),
                 duration_ms = VALUES(duration_ms)
         """), rows)
     art_song_rows = [{"song": t["id"], "artist": a["id"]} for t in tracks for a in (t.get("artists") or []) if a.get("id")]

@@ -11,7 +11,7 @@ from frontend_new.services.versions import (
     merge_songs, split_song, remove_override, dismiss_suggestion
 )
 
-dash.register_page(__name__, path="/versions", name="Versionen", group="Analyse", order=25)
+dash.register_page(__name__, path="/versions", name="Versionen", group="Bibliothek", order=31)
 
 GROUP_PAGE_SIZE = 20
 CHANGES_PAGE_SIZE = 50

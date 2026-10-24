@@ -6,7 +6,7 @@ from flask import Flask, request, jsonify
 
 from backend import backend_main, catalog_sync
 from auth.spotify_auth_manager import SpotifyServerAuth
-from common.db.schema import ensure_schema
+from common.db import migrate
 
 app = Flask(__name__)
 
@@ -18,6 +18,8 @@ auth = SpotifyServerAuth()
 POLL_INTERVAL_MINUTES = int(os.getenv('POLL_INTERVAL_MINUTES', '25'))
 # Nächtlicher rollierender Katalog-Abgleich (Stunde in lokaler Zeit, -1 = aus)
 CATALOG_SYNC_HOUR = int(os.getenv('CATALOG_SYNC_HOUR', '4'))
+# Abgleich eigener Playlists + Lieblingssongs (0 = aus)
+PLAYLIST_SYNC_MINUTES = int(os.getenv('PLAYLIST_SYNC_MINUTES', '60'))
 
 
 def _scheduled_fetch():
@@ -35,6 +37,14 @@ def _scheduled_catalog_sync():
         catalog_sync.rolling_sync()
     except Exception:
         logging.exception('Scheduled catalog sync failed.')
+
+
+def _scheduled_playlist_sync():
+    try:
+        from common.playlists import history
+        history.sync_all(auth.get_authenticated_spotify_client())
+    except Exception:
+        logging.exception('Scheduled playlist sync failed.')
 
 
 def start_scheduler():
@@ -63,9 +73,19 @@ def start_scheduler():
             coalesce=True,
             id='catalog_rolling_sync',
         )
+    if PLAYLIST_SYNC_MINUTES > 0:
+        scheduler.add_job(
+            _scheduled_playlist_sync,
+            trigger='interval',
+            minutes=PLAYLIST_SYNC_MINUTES,
+            max_instances=1,
+            coalesce=True,
+            next_run_time=datetime.now(),
+            id='playlist_sync',
+        )
     scheduler.start()
     logging.info(f'Internal scheduler started: every {POLL_INTERVAL_MINUTES} min, '
-                 f'catalog sync daily at {CATALOG_SYNC_HOUR}:00.')
+                 f'catalog sync daily at {CATALOG_SYNC_HOUR}:00, playlists every {PLAYLIST_SYNC_MINUTES} min.')
 
 @app.route('/start')
 def start():
@@ -104,7 +124,7 @@ def db_update_all():
 # 0.0.0.0 instead of localhost for docker
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    ensure_schema()
+    migrate.upgrade()  # Alembic: Schema auf den neuesten Stand bringen
     start_scheduler()
     app.run(host='0.0.0.0', port=9876)
     # app.run(host='localhost', port=9876)

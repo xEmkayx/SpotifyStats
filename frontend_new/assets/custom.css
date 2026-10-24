@@ -403,7 +403,7 @@ border-color: transparent !important;
 .list-group-item { background-color: transparent !important; color: var(--text) !important; border-color: var(--border) !important; }
 
 /* Tabellen (dbc.Table) auf dunklen Karten */
-.card .table {
+.card .table, .modal .table {
   --bs-table-bg: transparent;
   --bs-table-color: var(--text);
   --bs-table-hover-bg: rgba(255,255,255,.04);
@@ -411,4 +411,11 @@ border-color: transparent !important;
   --bs-table-border-color: var(--border);
   color: var(--text);
 }
-.card .table a { color: var(--brand); }
+.card .table a, .modal .table a { color: var(--brand); }
+.list-group-item-action:hover, .list-group-item-action:focus { background-color: rgba(255,255,255,.05) !important; }
+.list-group { --bs-list-group-bg: transparent; --bs-list-group-color: var(--text); background: transparent; }
+.list-group-item .text-muted, .list-group-item small { color: var(--muted) !important; }
+/* Modals an das dunkle Theme anpassen */
+.modal-content { background-color: var(--surface); color: var(--text); border: 1px solid var(--border-strong); }
+.modal-header, .modal-footer { border-color: var(--border); }
+.modal-content .btn-close { filter: invert(1); }

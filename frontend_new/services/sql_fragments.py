@@ -1,25 +1,29 @@
-from datetime import date, timedelta
+import re
+from datetime import date, datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
-from frontend_new.config import DB_DIALECT
+from frontend_new.config import DB_DIALECT, DISPLAY_TZ
+
+# played_at ist DATETIME(3) in UTC. Auswertungen nach Tag/Stunde/Wochentag laufen in Ortszeit
+# (inkl. Sommerzeit); der Zeitzonenname wird als Literal eingesetzt, daher streng geprüft.
+if not re.fullmatch(r"[A-Za-z_]+(/[A-Za-z0-9_+\-]+)*", DISPLAY_TZ):
+    raise ValueError(f"Ungültige DISPLAY_TZ: {DISPLAY_TZ!r}")
+_TZ = ZoneInfo(DISPLAY_TZ)
+
+
+def local_time_expr(alias="sh"):
+    if DB_DIALECT.lower() == "postgres":
+        return f"({alias}.played_at AT TIME ZONE 'UTC' AT TIME ZONE '{DISPLAY_TZ}')"
+    return f"CONVERT_TZ({alias}.played_at, 'UTC', '{DISPLAY_TZ}')"
 
 
 def played_at_cast_expr():
-    if DB_DIALECT.lower() == "postgres":
-        return "to_timestamp(sh.played_at, 'YYYY-MM-DD HH24:MI:SS.US')"
-    return "STR_TO_DATE(sh.played_at, '%Y-%m-%d %H:%i:%s.%f')"
+    # Zeitpunkt in Ortszeit (für Detailauswertungen in pandas)
+    return local_time_expr()
 
 
 def length_seconds_expr(song_alias="s"):
-    if DB_DIALECT.lower() == "postgres":
-        return (
-        f"EXTRACT(EPOCH FROM make_interval("
-        f"mins = split_part({song_alias}.song_length, ':', 1)::int, "
-        f"secs = split_part({song_alias}.song_length, ':', 2)::int"
-        f"))"
-        )
-    # duration_ms kommt aus dem Katalog-Abgleich; Fallback für noch nicht geprüfte Songs: 'MM:SS'
-    return (f"COALESCE({song_alias}.duration_ms / 1000, "
-            f"TIME_TO_SEC(STR_TO_DATE({song_alias}.song_length, '%i:%s')))")
+    return f"({song_alias}.duration_ms / 1000)"
 
 
 def artists_agg_left_join(song_alias="s", join_alias="aa"):
@@ -65,36 +69,40 @@ def album_artists_agg_left_join(album_alias="al", join_alias="aa"):
 
 
 def day_bucket_expr(alias="sh"):
-    # played_at beginnt immer mit "YYYY-MM-DD" -> kein Parsen pro Zeile nötig
-    return f"LEFT({alias}.played_at, 10)"
+    # Kalendertag in Ortszeit als 'YYYY-MM-DD'
+    if DB_DIALECT.lower() == "postgres":
+        return f"to_char({local_time_expr(alias)}, 'YYYY-MM-DD')"
+    return f"DATE_FORMAT({local_time_expr(alias)}, '%Y-%m-%d')"
 
 
 def hour_expr(alias="sh"):
-    # "YYYY-MM-DD HH:..." -> HH
     if DB_DIALECT.lower() == "postgres":
-        return f"CAST(SUBSTRING({alias}.played_at, 12, 2) AS INTEGER)"
-    return f"CAST(SUBSTRING({alias}.played_at, 12, 2) AS UNSIGNED)"
+        return f"CAST(EXTRACT(HOUR FROM {local_time_expr(alias)}) AS INTEGER)"
+    return f"HOUR({local_time_expr(alias)})"
 
 
 def weekday_expr(alias="sh"):
     # 0 = Montag .. 6 = Sonntag
     if DB_DIALECT.lower() == "postgres":
-        return f"(EXTRACT(ISODOW FROM CAST(LEFT({alias}.played_at, 10) AS DATE)) - 1)"
-    return f"WEEKDAY(LEFT({alias}.played_at, 10))"
+        return f"(EXTRACT(ISODOW FROM {local_time_expr(alias)}) - 1)"
+    return f"WEEKDAY({local_time_expr(alias)})"
 
 
 def played_at_range_expr(alias="sh"):
-    # played_at ist ein varchar mit ISO-Präfix ("YYYY-MM-DD HH:MM[:SS[.ffffff]]"),
-    # lexikografisch also gleich chronologisch. Der direkte Vergleich nutzt den
-    # PK-Index statt STR_TO_DATE für jede Zeile auszuwerten.
+    # Vergleich direkt auf der UTC-Spalte -> nutzt den PK-Index
     return f"{alias}.played_at >= :start_dt AND {alias}.played_at < :end_dt"
 
 
+def _local_midnight_utc(day: date) -> datetime:
+    return datetime(day.year, day.month, day.day, tzinfo=_TZ).astimezone(timezone.utc).replace(tzinfo=None)
+
+
 def range_params(start, end) -> dict:
-    # Akzeptiert "YYYY-MM-DD", "YYYY-MM-DD HH:MM" oder date; Ende ist inklusive des ganzen Tages
-    start_day = str(start)[:10]
-    end_excl = date.fromisoformat(str(end)[:10]) + timedelta(days=1)
-    return {"start_dt": start_day, "end_dt": end_excl.isoformat()}
+    # Akzeptiert "YYYY-MM-DD", "YYYY-MM-DD HH:MM" oder date. Gemeint sind ganze Kalendertage in Ortszeit;
+    # die Grenzen werden nach UTC umgerechnet (Ende exklusiv: Mitternacht nach dem Endtag).
+    start_day = date.fromisoformat(str(start)[:10])
+    end_day = date.fromisoformat(str(end)[:10]) + timedelta(days=1)
+    return {"start_dt": _local_midnight_utc(start_day), "end_dt": _local_midnight_utc(end_day)}
 
 
 def artists_of_song_expr(song_col="s.song_id"):

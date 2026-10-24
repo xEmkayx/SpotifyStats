@@ -75,18 +75,49 @@ def _existing_ids(conn, ids) -> set:
     return {r[0] for r in conn.execute(stmt, {"ids": list(ids)})}
 
 
+_batch_supported = True
+
+
+def _get_tracks(sp: spotipy.Spotify, ids: list[str], market: str = None) -> list:
+    """
+    GET /tracks?ids=... (50 pro Request). Seit den Dev-Mode-Änderungen vom Februar 2026
+    ist der Sammel-Endpunkt für Development-Mode-Apps gesperrt; dann wird auf
+    GET /tracks/{id} pro Song ausgewichen (langsamer, aber funktionsfähig).
+    """
+    global _batch_supported
+    if _batch_supported:
+        try:
+            return sp.tracks(ids, market=market)["tracks"]
+        except spotipy.SpotifyException as e:
+            if e.http_status not in (403, 404, 410):
+                raise
+            logging.warning(f"GET /tracks (Sammelabruf) nicht verfügbar ({e.http_status}), frage einzeln ab.")
+            _batch_supported = False
+    out = []
+    for i in ids:
+        try:
+            out.append(sp.track(i, market=market))
+        except spotipy.SpotifyException as e:
+            if e.http_status not in (400, 404):
+                raise
+            out.append(None)
+        time.sleep(PAUSE_SEC)
+    return out
+
+
 def sync_songs(song_ids: list[str], source: str = "sync", sp: spotipy.Spotify = None) -> dict:
     sp = sp or _client()
     stats = {"checked": 0, "relinked": 0, "unavailable": 0, "new_targets": 0, "changes": 0}
     for batch in _chunks(list(song_ids), BATCH_SIZE):
-        res = sp.tracks(batch, market=MARKET)["tracks"]
+        res = _get_tracks(sp, batch, market=MARKET)
         own_tracks, checked, relinked_old, targets = [], [], [], set()
         for sid, t in zip(batch, res):
             if t is None:
                 checked.append({"id": sid, "available": 0, "relinked_to": None})
                 continue
-            linked_from = (t.get("linked_from") or {}).get("id")
-            if linked_from == sid and t["id"] != sid:
+            # Relinking: mit market liefert Spotify die abspielbare Ersatz-ID. linked_from fehlt
+            # bei Dev-Mode-Apps seit 2026 -> die abweichende ID allein ist das Signal.
+            if t.get("id") and t["id"] != sid:
                 # Spotify spielt statt dieser ID eine andere ab -> Release wurde ersetzt
                 checked.append({"id": sid, "available": 0, "relinked_to": t["id"]})
                 relinked_old.append(sid)
@@ -98,15 +129,15 @@ def sync_songs(song_ids: list[str], source: str = "sync", sp: spotipy.Spotify = 
 
         if relinked_old:
             # Ohne market liefert die API die eigenen Metadaten der alten ID (Titel, ISRC, Album)
-            own_tracks += [t for t in sp.tracks(relinked_old)["tracks"] if t]
+            own_tracks += [t for t in _get_tracks(sp, relinked_old) if t]
             time.sleep(PAUSE_SEC)
 
         with engine.connect() as conn:
             missing_targets = sorted(targets - _existing_ids(conn, targets))
         if missing_targets:
             # Neue Versionen anlegen, damit sie als kanonische Version dienen können
-            for t in sp.tracks(missing_targets, market=MARKET)["tracks"]:
-                if t and not t.get("linked_from"):
+            for t in _get_tracks(sp, missing_targets, market=MARKET):
+                if t and t.get("id") in targets:
                     own_tracks.append(t)
                     checked.append({"id": t["id"], "available": 1 if t.get("is_playable", True) else 0,
                                     "relinked_to": None})
@@ -177,6 +208,6 @@ def full_sync_in_background() -> bool:
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    from common.db.schema import ensure_schema
-    ensure_schema()
+    from common.db import migrate
+    migrate.upgrade()
     print(full_sync())

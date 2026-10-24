@@ -9,6 +9,7 @@ import pandas as pd
 from sqlalchemy import text, bindparam
 
 from common.catalog.relations import rebuild_relations, DURATION_TOLERANCE_MS
+from frontend_new.config import DISPLAY_TZ
 from frontend_new.core.db import engine
 from frontend_new.core.extensions import cache
 from frontend_new.services.song_search import _escape_like
@@ -161,7 +162,9 @@ def catalog_changes(search: str, entity: str, page: int, page_size: int, cache_v
     df = pd.DataFrame([dict(r) for r in rows],
                       columns=["detected_at", "entity", "entity_id", "field", "old_value", "new_value", "source"])
     if not df.empty:
-        df["detected_at"] = df["detected_at"].astype(str).str[:16]
+        # DB speichert UTC -> Anzeige in Ortszeit
+        df["detected_at"] = (pd.to_datetime(df["detected_at"]).dt.tz_localize("UTC").dt.tz_convert(DISPLAY_TZ)
+                             .dt.strftime("%Y-%m-%d %H:%M"))
     return {"total": int(total or 0), "rows": df}
 
 
