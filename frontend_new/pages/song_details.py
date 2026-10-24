@@ -177,6 +177,8 @@ def update_all(n, song_id_dropdown, song_id_text, start_date, end_date, year, th
         html.Small(meta.get("artists", ""), className="text-muted d-block"),
         html.Small(meta.get("album_name", "") or "", className="text-muted d-block"),
         html.Small(f"{ov['total_plays']} Streams • {minutes} Min", className="text-muted d-block mt-2"),
+        html.Small(html.A(f"Zusammengefasst aus {ov['versions']} Versionen", href="/versions"),
+                   className="d-block") if ov.get("versions", 1) > 1 else None,
         html.A("Auf Spotify öffnen", href=f"https://open.spotify.com/track/{meta.get('song_id')}", target="_blank", className="mt-2 d-inline-block")
     ])
     kpis = [

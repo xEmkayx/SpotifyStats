@@ -4,9 +4,9 @@ import os
 
 from flask import Flask, request, jsonify
 
-from backend import backend_main
+from backend import backend_main, catalog_sync
 from auth.spotify_auth_manager import SpotifyServerAuth
-from backend.spotify_scripts import update_all
+from common.db.schema import ensure_schema
 
 app = Flask(__name__)
 
@@ -16,6 +16,8 @@ auth = SpotifyServerAuth()
 # Poll interval in minutes; 0 disables the internal scheduler (e.g. to drive it
 # externally). Default 30 -> safe against the 50-item cap of the Spotify API.
 POLL_INTERVAL_MINUTES = int(os.getenv('POLL_INTERVAL_MINUTES', '25'))
+# Nächtlicher rollierender Katalog-Abgleich (Stunde in lokaler Zeit, -1 = aus)
+CATALOG_SYNC_HOUR = int(os.getenv('CATALOG_SYNC_HOUR', '4'))
 
 
 def _scheduled_fetch():
@@ -26,6 +28,13 @@ def _scheduled_fetch():
         logging.info('Scheduled fetch completed.')
     except Exception:
         logging.exception('Scheduled fetch failed.')
+
+
+def _scheduled_catalog_sync():
+    try:
+        catalog_sync.rolling_sync()
+    except Exception:
+        logging.exception('Scheduled catalog sync failed.')
 
 
 def start_scheduler():
@@ -45,8 +54,18 @@ def start_scheduler():
         next_run_time=datetime.now(),  # kick once right after startup
         id='recently_played_fetch',
     )
+    if CATALOG_SYNC_HOUR >= 0:
+        scheduler.add_job(
+            _scheduled_catalog_sync,
+            trigger='cron',
+            hour=CATALOG_SYNC_HOUR,
+            max_instances=1,
+            coalesce=True,
+            id='catalog_rolling_sync',
+        )
     scheduler.start()
-    logging.info(f'Internal scheduler started: every {POLL_INTERVAL_MINUTES} min.')
+    logging.info(f'Internal scheduler started: every {POLL_INTERVAL_MINUTES} min, '
+                 f'catalog sync daily at {CATALOG_SYNC_HOUR}:00.')
 
 @app.route('/start')
 def start():
@@ -76,13 +95,16 @@ def auth_complete():
 
 @app.route('/db/update/all')
 def db_update_all():
-    update_all.main()
-    return "Success", 200
+    # Vollständiger Katalog-Abgleich (Namen, Unicode-Reparatur, ISRC, Relinking) im Hintergrund
+    if not catalog_sync.full_sync_in_background():
+        return "Catalog sync already running", 409
+    return "Catalog sync started", 202
 
 
 # 0.0.0.0 instead of localhost for docker
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
+    ensure_schema()
     start_scheduler()
     app.run(host='0.0.0.0', port=9876)
     # app.run(host='localhost', port=9876)

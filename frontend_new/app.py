@@ -1,3 +1,5 @@
+import logging
+
 from flask import Flask
 import dash
 from dash import html, dcc, Input, Output, ctx
@@ -6,10 +8,17 @@ from dash.dependencies import ClientsideFunction
 
 from frontend_new.config import CACHE_TIMEOUT_SEC, BOOTSTRAP_THEME, DATA_VERSION_TTL_SEC, DASH_HOST, DASH_PORT, \
     DASH_DEBUG
+from common.db.schema import ensure_schema
 from frontend_new.core.extensions import init_extensions
 
 server = Flask(__name__)
 init_extensions(server, cache_timeout_sec=CACHE_TIMEOUT_SEC)
+
+try:
+    # Additive Schema-Erweiterungen (Versionen, Änderungsprotokoll); idempotent
+    ensure_schema()
+except Exception:
+    logging.exception("Schema-Prüfung fehlgeschlagen")
 
 # Erst nach init_extensions importieren: data_version nutzt den Cache
 from frontend_new.core.data_version import data_version, bump_data_version  # noqa: E402

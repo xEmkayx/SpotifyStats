@@ -7,7 +7,8 @@ import pandas as pd
 from frontend_new.core.db import engine
 from frontend_new.core.extensions import cache
 from frontend_new.services.sql_fragments import (
-    played_at_range_expr, range_params, length_seconds_expr, day_bucket_expr, hour_expr, weekday_expr
+    played_at_range_expr, range_params, length_seconds_expr, day_bucket_expr, hour_expr, weekday_expr,
+    canonical_song_expr, canonical_join
 )
 
 LEN_SEC = length_seconds_expr("s")
@@ -17,11 +18,12 @@ KPI_SQL = f"""
 SELECT
     COUNT(*) AS streams,
     COALESCE(SUM({LEN_SEC}), 0) AS seconds_total,
-    COUNT(DISTINCT sh.song_id) AS songs,
+    COUNT(DISTINCT {canonical_song_expr()}) AS songs,
     COUNT(DISTINCT s.album_id) AS albums,
     COUNT(DISTINCT {day_bucket_expr()}) AS active_days
 FROM stream_history sh
 JOIN songs s ON s.song_id = sh.song_id
+{canonical_join()}
 WHERE {RANGE}
 """
 

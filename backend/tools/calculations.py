@@ -9,7 +9,7 @@ def ms_to_timestring(ms: int) -> str:
         seconds = f'0{seconds}'
     minutes = (millis / (1000 * 60)) % 60
     minutes = int(minutes)
-    if minutes in range(0, 9):
+    if minutes in range(0, 10):
         minutes = f'0{minutes}'
     # hours = (millis / (1000 * 60 * 60)) % 24
     return f'{minutes}:{seconds}'

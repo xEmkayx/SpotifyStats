@@ -1,0 +1,6 @@
+# Zeilenenden im Repo immer LF; Checkout je nach Plattform (Windows: CRLF)
+* text=auto
+*.png binary
+*.jpg binary
+*.ico binary
+*.gz binary

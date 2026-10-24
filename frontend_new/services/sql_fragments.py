@@ -17,8 +17,9 @@ def length_seconds_expr(song_alias="s"):
         f"secs = split_part({song_alias}.song_length, ':', 2)::int"
         f"))"
         )
-    # MySQL/MariaDB: 'MM:SS' -> Time -> Sekunden
-    return f"TIME_TO_SEC(STR_TO_DATE({song_alias}.song_length, '%i:%s'))"
+    # duration_ms kommt aus dem Katalog-Abgleich; Fallback für noch nicht geprüfte Songs: 'MM:SS'
+    return (f"COALESCE({song_alias}.duration_ms / 1000, "
+            f"TIME_TO_SEC(STR_TO_DATE({song_alias}.song_length, '%i:%s')))")
 
 
 def artists_agg_left_join(song_alias="s", join_alias="aa"):
@@ -113,16 +114,27 @@ def artists_of_album_expr(album_col="al.album_id"):
             f"FROM album_artists aa JOIN artists ar ON ar.artist_id = aa.artist_id WHERE aa.album_id = {album_col})")
 
 
+def canonical_song_expr(alias="sh"):
+    # Versionen desselben Lieds (ersetzte Releases, gleiche Aufnahme) zählen für die kanonische ID
+    return f"COALESCE(sr.canonical_song_id, {alias}.song_id)"
+
+
+def canonical_join(alias="sh"):
+    return f"LEFT JOIN song_relations sr ON sr.song_id = {alias}.song_id"
+
+
 def plays_per_song_sql(extra_where: str = "", extra_join: str = "") -> str:
-    # Plays + Sekunden pro Song im Zeitraum (played_at ist PK -> COUNT(*) ohne DISTINCT)
+    # Plays + Sekunden pro (kanonischem) Song im Zeitraum (played_at ist PK -> COUNT(*) ohne DISTINCT).
+    # s ist die tatsächlich gespielte Version (Filter, Länge), song_id im Ergebnis die kanonische.
     where = f"{played_at_range_expr()}" + (f" AND ({extra_where})" if extra_where else "")
     return f"""
-    SELECT sh.song_id, COUNT(*) AS plays, COUNT(*) * MAX({length_seconds_expr("s")}) AS seconds_total
+    SELECT {canonical_song_expr()} AS song_id, COUNT(*) AS plays, SUM({length_seconds_expr("s")}) AS seconds_total
     FROM stream_history sh
     JOIN songs s ON s.song_id = sh.song_id
+    {canonical_join()}
     {extra_join}
     WHERE {where}
-    GROUP BY sh.song_id
+    GROUP BY {canonical_song_expr()}
     """
 
 

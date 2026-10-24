@@ -1,12 +1,13 @@
-from backend.spotify_scripts.BigOperations import utf8_albums
-from backend.spotify_scripts.BigOperations import utf8_song_titles
-from backend.spotify_scripts.BigOperations import update_artists
+"""
+    Vollständiger Katalog-Abgleich. Ersetzt die früheren utf8_*-Reparaturskripte:
+    Namen werden direkt aus den Spotify-Daten übernommen (inkl. Unicode),
+    dazu ISRC, Verfügbarkeit und Relinking.
+"""
+from backend import catalog_sync
 
 
 def main():
-    utf8_albums.main()
-    update_artists.main()
-    utf8_song_titles.main()
+    return catalog_sync.full_sync()
 
 
 if __name__ == '__main__':

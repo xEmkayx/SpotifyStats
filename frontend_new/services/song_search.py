@@ -15,6 +15,8 @@ LEFT JOIN (
     GROUP BY asg.song_id
 ) aa ON aa.song_id = s.song_id
 WHERE ({where_clause})
+  -- ältere/parallele Versionen tauchen über ihre kanonische Version auf
+  AND NOT EXISTS (SELECT 1 FROM song_relations sr WHERE sr.song_id = s.song_id)
 ORDER BY s.song_name
 LIMIT :limit
 """

@@ -5,12 +5,13 @@ from datetime import datetime, date
 from typing import Optional
 import numpy as np
 import pandas as pd
-from sqlalchemy import text
+from sqlalchemy import text, bindparam
 
 from frontend_new.core.db import engine
 from frontend_new.core.extensions import cache
 from frontend_new.services.spotify_images import track_images, album_images
 from frontend_new.services.sql_fragments import played_at_cast_expr
+from frontend_new.services.versions import song_group_ids
 
 # Hilfsfunktionen
 
@@ -94,16 +95,18 @@ def song_meta(song_id: str) -> SongMeta | None:
 
 
 def _fetch_timestamps(song_id: str) -> pd.Series:
-    # Roh-Timestamps (als echte DATETIME) aus DB ziehen und als Pandas Series zurückgeben
+    # Roh-Timestamps (als echte DATETIME) aller Versionen des Songs als Pandas Series
+    _, ids = song_group_ids(song_id)
     cast_expr = played_at_cast_expr()  # nutzt Sekunden + Mikrosekunden
     sql = f"""
     SELECT {cast_expr} AS ts
     FROM stream_history sh
-    WHERE sh.song_id = :song_id
+    WHERE sh.song_id IN :song_ids
     ORDER BY ts
     """
     with engine.begin() as conn:
-        rows = conn.execute(text(sql), {"song_id": song_id}).fetchall()
+        rows = conn.execute(text(sql).bindparams(bindparam("song_ids", expanding=True)),
+                            {"song_ids": ids}).fetchall()
     if not rows:
         return pd.Series([], dtype="datetime64[ns]", name="ts")
     ts = pd.to_datetime([r[0] for r in rows])
@@ -173,7 +176,8 @@ def _days_to_50pct(ts: pd.Series) -> Optional[int]:
 
 @cache.memoize(timeout=1800)
 def song_overview(song_id: str, date_start_iso: Optional[str], date_end_iso: Optional[str], cache_ver: int = 0) -> dict:
-    meta = song_meta(song_id)
+    canonical, ids = song_group_ids(song_id)
+    meta = song_meta(canonical)
     if not meta:
         return {"exists": False}
 
@@ -187,6 +191,7 @@ def song_overview(song_id: str, date_start_iso: Optional[str], date_end_iso: Opt
         return {
             "exists": True,
             "meta": meta.__dict__,
+            "versions": len(ids),
             "total_plays": 0,
             "seconds_total": 0,
             "first_play": None,
@@ -216,6 +221,7 @@ def song_overview(song_id: str, date_start_iso: Optional[str], date_end_iso: Opt
     return {
         "exists": True,
         "meta": meta.__dict__,
+        "versions": len(ids),
         "total_plays": total_plays,
         "seconds_total": seconds_total,
         "first_play": first_play.isoformat(),
