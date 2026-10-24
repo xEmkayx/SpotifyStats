@@ -38,15 +38,15 @@ def layout():
     filters = build_filter_panel(
         scope=SCOPE,
         controls=[
-            _segmented(SCOPE, "category", "Suchen nach",
+            _segmented(SCOPE, "category", "Was suchst du?",
                        [{"label": v, "value": k} for k, v in CATEGORY_LABELS.items()], "artist"),
-            _segmented(SCOPE, "match", "Vergleich über",
+            _segmented(SCOPE, "match", "Suchen per",
                        [{"label": "Name", "value": "name"}, {"label": "ID", "value": "id"}], "name"),
-            text_input(SCOPE, "query", "Suchbegriff", placeholder="z. B. Daft Punk"),
+            text_input(SCOPE, "query", "Suche", placeholder="z. B. Daft Punk"),
             # Standard: gesamte Historie, wie in den alten Single-Seiten
             date_range(SCOPE, default_days=(date.today() - date(2015, 1, 1)).days),
             quick_ranges(SCOPE),
-            topn_slider(SCOPE, label="Max. Songs", default=50, minv=10, maxv=200, step=10),
+            topn_slider(SCOPE, label="Höchstens so viele Songs", default=50, minv=10, maxv=200, step=10),
         ],
         with_apply=True,
         variant="plain"
@@ -54,12 +54,12 @@ def layout():
     right = [
         dbc.Card([
             dbc.CardHeader(dbc.Row([
-                dbc.Col(html.Div("Streams pro Song"), align="center"),
+                dbc.Col(html.Div("Deine Songs dazu"), align="center"),
                 dbc.Col(metric_toggle(SCOPE), width="auto", align="center", className="ms-auto"),
             ], className="g-2")),
             dbc.CardBody(dcc.Loading(children=html.Div(
                 id=f"{SCOPE}-visual",
-                children=empty_state("Noch keine Suche", "Artist, Album oder Songtitel eingeben und anwenden.",
+                children=empty_state("Wonach suchst du?", "Gib links einen Artist, ein Album oder einen Song ein.",
                                      icon="bi bi-search")
             )))
         ])
@@ -88,14 +88,14 @@ register_sidebar_toggle(SCOPE)
 def update_visual(_, metric, category, match, query, start_date, end_date, top_n, theme, cache_ver):
     query = (query or "").strip()
     if not query:
-        return empty_state("Kein Suchbegriff", "Bitte einen Suchbegriff eingeben.", icon="bi bi-search")
+        return empty_state("Wonach suchst du?", "Gib links einen Suchbegriff ein.", icon="bi bi-search")
     if not start_date or not end_date:
         return no_update
     metric = (metric or "plays").lower()
     df = entity_song_streams(category, match, query, start_date, end_date, int(top_n or 50), metric,
                              int(cache_ver or 0))
     if df.empty:
-        return empty_state("Keine Treffer", "Suchbegriff oder Zeitraum anpassen.", icon="bi bi-funnel")
-    title = f'{CATEGORY_LABELS.get(category, "")} "{query}": {len(df)} Songs, {int(df["plays"].sum())} Streams'
+        return empty_state("Nichts gefunden", "Probier einen anderen Suchbegriff oder Zeitraum.", icon="bi bi-funnel")
+    title = f'„{query}“: {len(df)} Songs, {int(df["plays"].sum())} Streams'
     fig = build_entity_songs_figure(df, metric, title, dark=(theme == "dark"))
     return dcc.Graph(figure=fig, config={"displayModeBar": True})

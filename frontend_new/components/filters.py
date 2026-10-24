@@ -59,7 +59,7 @@ def date_range(scope: str, label="Zeitraum", default_days=90):
     return form_group(label, control)
 
 
-def topn_slider(scope: str, label="Anzahl Top N", default=30, minv=10, maxv=100, step=10):
+def topn_slider(scope: str, label="Wie viele?", default=30, minv=10, maxv=100, step=10):
     if maxv <= 100:
         mark_vals = [i for i in [10, 20, 30, 40, 50, 75, 100] if minv <= i <= maxv]
     else:
@@ -103,7 +103,7 @@ def quick_ranges(scope: str):
 
 def metric_toggle(scope: str):
     return form_group(
-        "Metrik",
+        "Zählen nach",
         # Wrapper mit eigener Klasse, damit wir gezielt stylen können
         html.Div(
             dbc.RadioItems(

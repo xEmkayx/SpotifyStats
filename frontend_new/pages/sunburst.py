@@ -16,7 +16,7 @@ dash.register_page(__name__, path="/sunburst", name="Sunburst", group="Charts", 
 
 
 def hierarchy_select(scope: str):
-    return form_group("Hierarchie", dbc.Select(
+    return form_group("Aufteilung", dbc.Select(
         id=fid(scope, "hierarchy"),
         options=[{"label": label, "value": key} for key, (_, label) in SUNBURST_PATHS.items()],
         value="artist-album-song",
@@ -30,7 +30,7 @@ def layout():
             date_range(SCOPE, default_days=365),
             quick_ranges(SCOPE),
             hierarchy_select(SCOPE),
-            topn_slider(SCOPE, label="Anzahl Songs", default=300, minv=50, maxv=1000, step=50),
+            topn_slider(SCOPE, label="Wie viele Songs?", default=300, minv=50, maxv=1000, step=50),
         ],
         with_apply=True,
         variant="plain"
@@ -38,7 +38,7 @@ def layout():
     right = [
         dbc.Card([
             dbc.CardHeader(dbc.Row([
-                dbc.Col(html.Div("Sunburst"), align="center"),
+                dbc.Col(html.Div("Deine Musik im Überblick"), align="center"),
                 dbc.Col(metric_toggle(SCOPE), width="auto", align="center", className="ms-auto"),
             ], className="g-2")),
             dbc.CardBody(dcc.Loading(children=html.Div(id=f"{SCOPE}-visual", children=skeleton_graph(height=700))))

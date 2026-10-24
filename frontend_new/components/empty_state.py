@@ -1,7 +1,7 @@
 import dash_bootstrap_components as dbc
 from dash import html
 
-def empty_state(title="Keine Daten", subtitle="Bitte Filter anwenden oder Zeitraum anpassen.", icon="bi bi-bar-chart"):
+def empty_state(title="Keine Daten", subtitle="Wähl einen Zeitraum aus und klick auf Anwenden.", icon="bi bi-bar-chart"):
     return html.Div(
     className="empty-state",
     children=dbc.Stack(

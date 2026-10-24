@@ -34,7 +34,7 @@ def make_navbar():
         dbc.Container([
         dbc.NavbarBrand("Spotify Stats", href="/", className="me-3"),
         dbc.Nav(items, navbar=True, className="me-auto"),
-        dbc.Button([html.I(className="bi bi-arrow-clockwise me-1"), "Refresh Daten"],
+        dbc.Button([html.I(className="bi bi-arrow-clockwise me-1"), "Aktualisieren"],
         id="btn-refresh", color="secondary", size="sm"),
         ]),
         color="light",

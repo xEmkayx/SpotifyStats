@@ -24,14 +24,14 @@ def playlist_modal(scope: str, default_name="SpotifyStats Playlist"):
     id=pmodal(scope),
     is_open=False,
     children=[
-    dbc.ModalHeader(dbc.ModalTitle("Playlist erstellen")),
+    dbc.ModalHeader(dbc.ModalTitle("Als Playlist speichern")),
     dbc.ModalBody([
     dbc.Label("Name"),
     dbc.Input(id=pname(scope), value=default_name, placeholder="Playlist-Name", type="text"),
     html.Br(),
     dbc.Checkbox(id=ppublic(scope), value=True, label="Öffentliche Playlist"),
     html.Div(className="text-muted mt-2",
-    children="Die Playlist enthält die aktuell angezeigten Top-Songs in der gewählten Reihenfolge.")
+    children="Die Playlist enthält genau die Songs, die du gerade siehst, in derselben Reihenfolge.")
     ]),
     dbc.ModalFooter([
     dbc.Button("Abbrechen", id={"type":"modal-cancel","scope":scope}, color="secondary", outline=True),

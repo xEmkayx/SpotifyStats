@@ -15,7 +15,7 @@ def spotify_client():
     # Ohne gespeichertes Token würde spotipy per input() nach der Redirect-URL fragen
     # und den Request-Thread dauerhaft blockieren -> lieber sauber abbrechen.
     if not auth.oauth.get_cached_token():
-        raise RuntimeError("Kein Spotify-Token vorhanden (Autorisierung über das Backend nötig).")
+        raise RuntimeError("Die Verbindung zu Spotify fehlt noch. Bitte melde dich einmal über das Backend an.")
     return auth.get_authenticated_spotify_client()
 
 

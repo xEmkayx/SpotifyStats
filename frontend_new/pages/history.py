@@ -16,7 +16,7 @@ PAGE_SIZE = 50
 dash.register_page(__name__, path="/history", name="Hörhistorie", group="Analyse", order=21)
 
 COLUMNS = [
-    {"name": "Gespielt am", "id": "played_at"},
+    {"name": "Gehört am", "id": "played_at"},
     {"name": "Song", "id": "song_name"},
     {"name": "Artists", "id": "artists"},
     {"name": "Album", "id": "album_name"},
@@ -30,18 +30,18 @@ def layout():
         controls=[
             date_range(SCOPE, default_days=30),
             quick_ranges(SCOPE),
-            text_input(SCOPE, "search", "Suche (Song, Artist, Album)", placeholder="optional"),
+            text_input(SCOPE, "search", "Suche", placeholder="Song, Artist oder Album"),
         ],
         with_apply=True,
         variant="plain"
     )
     right = [
         dbc.Card([
-            dbc.CardHeader("Überblick"),
+            dbc.CardHeader("Im gewählten Zeitraum"),
             dbc.CardBody(html.Div(id=f"{SCOPE}-totals", className="fw-semibold"), className="py-2")
         ], className="mb-3"),
         dbc.Card([
-            dbc.CardHeader("Streams"),
+            dbc.CardHeader("Gehörte Songs"),
             dbc.CardBody(dcc.Loading(dash_table.DataTable(
                 id=f"{SCOPE}-table",
                 columns=COLUMNS,
@@ -86,9 +86,9 @@ def reset_page(_):
 )
 def update_totals(_, start_date, end_date, search, cache_ver):
     if not start_date or not end_date:
-        return "Bitte Zeitraum wählen.", 1
+        return "Wähl einen Zeitraum aus.", 1
     t = history_totals(start_date, end_date, search or "", int(cache_ver or 0))
-    text = f"{t['streams']} Streams • (Ungefähre) Hörzeit: {format_duration_de(t['seconds_total'])}"
+    text = f"{t['streams']} Streams · etwa {format_duration_de(t['seconds_total'])} Musik"
     return text, max(1, math.ceil(t["streams"] / PAGE_SIZE))
 
 

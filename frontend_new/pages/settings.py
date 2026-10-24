@@ -6,6 +6,7 @@ from frontend_new.config import CACHE_TIMEOUT_SEC, DATA_VERSION_TTL_SEC
 from frontend_new.core.data_version import bump_data_version
 from frontend_new.core.extensions import cache
 from frontend_new.services.dashboard import db_status
+from frontend_new.services.playlists import local_time
 
 dash.register_page(__name__, path="/settings", name="Einstellungen", order=90)
 
@@ -14,17 +15,17 @@ def layout():
     return dbc.Container([
         dbc.Row([
             dbc.Col(dbc.Card([
-                dbc.CardHeader("Datenbestand"),
+                dbc.CardHeader("Deine Daten"),
                 dbc.CardBody(html.Div(id="settings-status", children=_status_list()))
             ]), md=6),
             dbc.Col(dbc.Card([
                 dbc.CardHeader("Aktualisierung"),
                 dbc.CardBody([
                     html.P([
-                        f"Neue Streams werden automatisch erkannt (Prüfung alle {DATA_VERSION_TTL_SEC} s). "
-                        f"Berechnete Ansichten werden bis zu {CACHE_TIMEOUT_SEC // 60} Minuten zwischengespeichert."
+                        f"Neue Streams tauchen automatisch auf, spätestens nach {DATA_VERSION_TTL_SEC} Sekunden. "
+                        f"Falls etwas nicht stimmt, kannst du hier alles neu laden."
                     ], className="text-muted"),
-                    dbc.Button([html.I(className="bi bi-trash me-1"), "Cache leeren & Daten neu laden"],
+                    dbc.Button([html.I(className="bi bi-arrow-clockwise me-1"), "Alles neu laden"],
                                id="settings-clear-cache", color="primary"),
                     html.Div(id="settings-feedback", className="mt-3"),
                 ])
@@ -37,11 +38,11 @@ def _status_list():
     try:
         s = db_status()
     except Exception as e:
-        return dbc.Alert(f"Datenbank nicht erreichbar: {e}", color="danger")
+        return dbc.Alert(f"Die Datenbank ist gerade nicht erreichbar: {e}", color="danger")
     rows = [
         ("Streams", f"{s['streams']:,}".replace(",", ".")),
-        ("Erster Stream", str(s["first_stream"] or "—")[:19]),
-        ("Letzter Stream", str(s["last_stream"] or "—")[:19]),
+        ("Erster Stream", local_time(s["first_stream"])),
+        ("Letzter Stream", local_time(s["last_stream"])),
         ("Songs", f"{s['songs']:,}".replace(",", ".")),
         ("Artists", f"{s['artists']:,}".replace(",", ".")),
         ("Alben", f"{s['albums']:,}".replace(",", ".")),
@@ -65,5 +66,5 @@ def clear_cache(n):
         return no_update, no_update, no_update
     cache.clear()
     version = bump_data_version()
-    return dbc.Alert("Cache geleert, Daten werden neu geladen.", color="success", duration=4000), \
+    return dbc.Alert("Erledigt – alles wird neu geladen.", color="success", duration=4000), \
         _status_list(), version

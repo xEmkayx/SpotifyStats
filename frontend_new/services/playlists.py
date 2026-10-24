@@ -22,6 +22,12 @@ _SORTS = {
 }
 
 
+def count(n, singular: str, plural: str) -> str:
+    # "1 Song" / "3 Songs", Tausenderpunkt wie im Deutschen üblich
+    n = int(n or 0)
+    return f"{n:,}".replace(",", ".") + " " + (singular if n == 1 else plural)
+
+
 def local_time(value, fmt: str = "%d.%m.%Y %H:%M") -> str:
     if not value:
         return "—"

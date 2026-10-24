@@ -30,7 +30,7 @@ class PlaylistActionError(Exception):
 def _playlist_row(conn, playlist_id: str):
     row = conn.execute(text("SELECT * FROM playlists WHERE playlist_id = :p"), {"p": playlist_id}).mappings().first()
     if not row:
-        raise PlaylistActionError("Playlist unbekannt.")
+        raise PlaylistActionError("Diese Playlist gibt es hier nicht.")
     return row
 
 
@@ -51,13 +51,14 @@ def _backup_current(sp, playlist_id: str, reason: str) -> tuple[dict, list[dict]
 def _check_writable(items: list[dict]):
     if any(it["is_local"] for it in items):
         # Lokale Dateien lassen sich über die API nicht wieder einfügen -> Neuschreiben würde sie löschen
-        raise PlaylistActionError("Die Playlist enthält lokale Dateien; die lassen sich über die API nicht "
-                                  "neu schreiben. Bitte in der Spotify-App bearbeiten.")
+        raise PlaylistActionError("In dieser Playlist sind lokale Dateien. Die kann Spotify von außen nicht "
+                                  "wieder einfügen, deshalb bitte direkt in der Spotify-App bearbeiten.")
 
 
 def _check_unchanged(expected_hash: str, items: list[dict], meta: dict):
     if expected_hash and history.content_hash(items, meta.get("name"), meta.get("description")) != expected_hash:
-        raise PlaylistActionError("Die Playlist wurde seit der Vorschau verändert. Bitte neu laden und erneut prüfen.")
+        raise PlaylistActionError("Die Playlist hat sich in der Zwischenzeit geändert. Lade die Seite neu und "
+                                  "schau dir die Vorschau noch einmal an.")
 
 
 # --- Vorschau ---
@@ -66,7 +67,7 @@ def preview_restore(snapshot_pk: int) -> dict:
     with engine.connect() as conn:
         snap = conn.execute(text("SELECT * FROM playlist_snapshots WHERE id = :s"), {"s": snapshot_pk}).mappings().first()
         if not snap:
-            raise PlaylistActionError("Snapshot unbekannt.")
+            raise PlaylistActionError("Diesen Stand gibt es nicht mehr.")
         latest = history.latest_snapshot(conn, snap["playlist_id"])
         target = history.snapshot_items(conn, snapshot_pk)
         current = history.snapshot_items(conn, latest["id"])
@@ -97,11 +98,12 @@ def restore_snapshot(sp, snapshot_pk: int, expected_hash: str) -> str:
     with engine.connect() as conn:
         snap = conn.execute(text("SELECT * FROM playlist_snapshots WHERE id = :s"), {"s": snapshot_pk}).mappings().first()
         if not snap:
-            raise PlaylistActionError("Snapshot unbekannt.")
+            raise PlaylistActionError("Diesen Stand gibt es nicht mehr.")
         row = _playlist_row(conn, snap["playlist_id"])
         target = history.snapshot_items(conn, snapshot_pk)
     if row["playlist_id"] == history.LIKED_ID:
-        raise PlaylistActionError("Lieblingssongs können nicht zurückgesetzt werden (Spotify erlaubt keine Reihenfolge).")
+        raise PlaylistActionError("Lieblingssongs lassen sich nicht zurücksetzen, weil Spotify sie immer nach "
+                                  "dem Datum sortiert, an dem du sie gespeichert hast.")
     uris = [it["uri"] for it in target if it["uri"] and not it["is_local"]]
 
     if row["deleted_at"]:
@@ -111,7 +113,7 @@ def restore_snapshot(sp, snapshot_pk: int, expected_hash: str) -> str:
         api.replace_playlist_items(sp, created["id"], uris)
         history.sync_playlist(sp, {**created, "owner": created.get("owner") or {"id": row["owner_id"]}},
                               reason="restore", force_fetch=True)
-        return f"Als neue Playlist „{created.get('name')}“ wiederhergestellt ({len(uris)} Titel)."
+        return f"Fertig – die Playlist ist als „{created.get('name')}“ wieder da ({len(uris)} Songs)."
 
     meta, items, _ = _backup_current(sp, row["playlist_id"], "before_restore")
     _check_unchanged(expected_hash, items, meta)
@@ -119,7 +121,7 @@ def restore_snapshot(sp, snapshot_pk: int, expected_hash: str) -> str:
     api.replace_playlist_items(sp, row["playlist_id"], uris)
     history.sync_playlist(sp, {**meta, "id": row["playlist_id"]}, reason="restore", force_fetch=True)
     taken = snap["taken_at"].replace(tzinfo=timezone.utc).astimezone(_DISPLAY_TZ)
-    return f"Playlist auf den Stand vom {taken:%d.%m.%Y %H:%M} zurückgesetzt ({len(uris)} Titel)."
+    return f"Fertig – die Playlist ist wieder auf dem Stand vom {taken:%d.%m.%Y, %H:%M} Uhr ({len(uris)} Songs)."
 
 
 def replace_superseded(sp, playlist_id: str, expected_hash: str) -> str:
@@ -130,27 +132,29 @@ def replace_superseded(sp, playlist_id: str, expected_hash: str) -> str:
     _check_writable(items)
     todo, _ = superseded_items(playlist_id)
     if not todo:
-        return "Keine ersetzten Versionen in dieser Playlist."
+        return "In dieser Playlist ist schon alles aktuell."
     new_uri = {it["position"]: it["new_uri"] for it in todo}
     uris = [new_uri.get(it["position"], it["uri"]) for it in items]
     api.replace_playlist_items(sp, playlist_id, uris)
     history.sync_playlist(sp, {**meta, "id": playlist_id}, reason="replace", force_fetch=True)
-    return f"{len(todo)} Titel durch die aktuelle Version ersetzt (Positionen unverändert)."
+    return f"Fertig – {len(todo)} Songs sind jetzt in der aktuellen Version drin, an derselben Stelle wie vorher."
 
 
 def _replace_superseded_liked(sp, expected_hash: str) -> str:
     if "user-library-modify" not in api.token_scopes(sp.auth_manager):
-        raise PlaylistActionError("Für Lieblingssongs fehlt die Berechtigung „user-library-modify“. "
-                                  "Dafür muss die Spotify-Autorisierung mit erweitertem Scope erneuert werden.")
+        raise PlaylistActionError("Für deine Lieblingssongs fehlt noch eine Berechtigung bei Spotify "
+                                  "(„user-library-modify“). Dafür musst du die Verbindung zu Spotify einmal neu "
+                                  "herstellen.")
     total, items = api.get_saved_tracks(sp)
     with engine.connect() as conn:
         latest = history.latest_snapshot(conn, history.LIKED_ID)
     if expected_hash and latest and latest["content_hash"] != expected_hash:
-        raise PlaylistActionError("Die Lieblingssongs wurden seit der Vorschau verändert. Bitte neu laden.")
+        raise PlaylistActionError("Deine Lieblingssongs haben sich in der Zwischenzeit geändert. Lade die Seite "
+                                  "neu und schau dir die Vorschau noch einmal an.")
     todo, _ = superseded_items(history.LIKED_ID)
     if not todo:
-        return "Keine ersetzten Versionen in den Lieblingssongs."
+        return "Bei deinen Lieblingssongs ist schon alles aktuell."
     api.save_to_library(sp, [it["new_uri"] for it in todo])
     api.remove_from_library(sp, [it["uri"] for it in todo])
     history.sync_liked(sp, reason="replace", force_fetch=True)
-    return f"{len(todo)} Lieblingssongs durch die aktuelle Version ersetzt (sie stehen jetzt oben in der Liste)."
+    return f"Fertig – {len(todo)} Lieblingssongs sind jetzt in der aktuellen Version drin. Sie stehen jetzt ganz oben."

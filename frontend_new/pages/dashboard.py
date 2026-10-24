@@ -32,11 +32,11 @@ def layout():
     right = [
         dcc.Loading(html.Div(id=f"{SCOPE}-kpis", children=skeleton_graph(height=90))),
         dbc.Card([
-            dbc.CardHeader("Verlauf"),
+            dbc.CardHeader("Wie viel du hörst"),
             dbc.CardBody(dcc.Loading(html.Div(id=f"{SCOPE}-timeline", children=skeleton_graph(height=380))))
         ], className="mb-3"),
         dbc.Card([
-            dbc.CardHeader("Hörgewohnheiten"),
+            dbc.CardHeader("Wann du hörst"),
             dbc.CardBody(dcc.Loading(html.Div(id=f"{SCOPE}-weekhour", children=skeleton_graph(height=340))))
         ]),
     ]
@@ -67,10 +67,10 @@ def update_kpis(_, start_date, end_date, theme, cache_ver):
         _kpi("Songs", f"{k['songs']:,}".replace(",", "."), "bi bi-music-note"),
         _kpi("Artists", f"{k['artists']:,}".replace(",", "."), "bi bi-person"),
         _kpi("Alben", f"{k['albums']:,}".replace(",", "."), "bi bi-disc"),
-        _kpi("Ø Streams / aktivem Tag", f"{per_day}".replace(".", ","), "bi bi-calendar-check"),
+        _kpi("Streams pro Hörtag", f"{per_day}".replace(".", ","), "bi bi-calendar-check"),
     ], className="g-3")
-    hint = html.Div(f"(Ungefähre) Gesamte Hörzeit: {format_duration_de(k['seconds_total'])} "
-                    f"an {k['active_days']} Tagen", className="text-muted small mb-3")
+    hint = html.Div(f"Du hast an {k['active_days']} Tagen Musik gehört, insgesamt etwa "
+                    f"{format_duration_de(k['seconds_total'])}.", className="text-muted small mb-3")
     wh = weekday_hour_streams(start_date, end_date, int(cache_ver or 0))
     fig_wh = build_weekday_hour_figure(wh, dark=(theme == "dark"))
     return [kpis, hint], dcc.Graph(figure=fig_wh, config={"displayModeBar": False})

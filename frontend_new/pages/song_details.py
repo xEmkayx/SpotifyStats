@@ -33,10 +33,10 @@ def layout():
         scope=SCOPE,
         controls=[
             dropdown(SCOPE, "song", "Song", options=[], multi=False,
-                     placeholder="Tippe zum Suchen (min. 2 Zeichen)"),
-            text_input(SCOPE, "song_id", "Song-ID (optional)", placeholder="z. B. 4uLU6hMCjMI75M1A2tKUQC"),
+                     placeholder="Song oder Artist eintippen"),
+            text_input(SCOPE, "song_id", "…oder Song-ID", placeholder="z. B. 4uLU6hMCjMI75M1A2tKUQC"),
             date_range(SCOPE, "Zeitraum", default_days=365),
-            dropdown(SCOPE, "year", "Jahr für Kalender", options=_year_options(), multi=False, placeholder="Jahr wählen"),
+            dropdown(SCOPE, "year", "Jahr für den Kalender", options=_year_options(), multi=False, placeholder="Jahr wählen"),
         ],
         with_apply=True,
         variant="plain",
@@ -44,17 +44,17 @@ def layout():
     right = [
         dbc.Row([
             dbc.Col(dbc.Card([
-                dbc.CardHeader("Song-Überblick"),
+                dbc.CardHeader("Überblick"),
                 dbc.CardBody(html.Div(id="songd-overview", children=skeleton_graph()))
             ]), md=12)
         ], className="mb-3"),
         dbc.Row([
             dbc.Col(dbc.Card([
-                dbc.CardHeader("Lifecycle"),
+                dbc.CardHeader("Verlauf"),
                 dbc.CardBody(dcc.Loading(type="default", children=html.Div(id="songd-lifecycle", children=skeleton_graph())))
             ]), md=6),
             dbc.Col(dbc.Card([
-                dbc.CardHeader("Clock & Inter-Arrival"),
+                dbc.CardHeader("Uhrzeit und Abstände"),
                 dbc.CardBody(dcc.Loading(type="default", children=html.Div([
                     html.Div(id="songd-clock", children=skeleton_graph()),
                     html.Hr(),
@@ -64,7 +64,7 @@ def layout():
         ], className="mb-3"),
         dbc.Row([
             dbc.Col(dbc.Card([
-                dbc.CardHeader("Hörhistorie (Kalender)"),
+                dbc.CardHeader("An welchen Tagen"),
                 dbc.CardBody(dcc.Loading(type="default", children=html.Div(id="songd-hm", children=skeleton_graph())))
             ]), md=12)
         ])
@@ -139,13 +139,13 @@ def update_song_selector(search_value, song_id, options):
 def update_all(n, song_id_dropdown, song_id_text, start_date, end_date, year, theme, cache_ver):
     chosen_id = (song_id_dropdown or song_id_text or "").strip()
     if not chosen_id:
-        msg = dbc.Alert("Bitte Song wählen.", color="info")
+        msg = dbc.Alert("Wähl links einen Song aus.", color="info")
         return msg, skeleton_graph(), skeleton_graph(), skeleton_graph(), skeleton_graph()
 
     # Overview
     ov = song_overview(chosen_id, start_date, end_date, int(cache_ver or 0))
     if not ov.get("exists"):
-        msg = dbc.Alert("Song nicht gefunden.", color="warning")
+        msg = dbc.Alert("Diesen Song gibt es hier nicht.", color="warning")
         return msg, skeleton_graph(), skeleton_graph(), skeleton_graph(), skeleton_graph()
 
     dark = (theme == "dark")
@@ -176,10 +176,10 @@ def update_all(n, song_id_dropdown, song_id_text, start_date, end_date, year, th
         html.Div(meta.get("song_name", ""), className="h5 mb-1"),
         html.Small(meta.get("artists", ""), className="text-muted d-block"),
         html.Small(meta.get("album_name", "") or "", className="text-muted d-block"),
-        html.Small(f"{ov['total_plays']} Streams • {minutes} Min", className="text-muted d-block mt-2"),
-        html.Small(html.A(f"Zusammengefasst aus {ov['versions']} Versionen", href="/versions"),
+        html.Small(f"{ov['total_plays']} Streams · {minutes} Minuten", className="text-muted d-block mt-2"),
+        html.Small(html.A(f"Gibt es in {ov['versions']} Versionen – alle zusammengezählt", href="/versions"),
                    className="d-block") if ov.get("versions", 1) > 1 else None,
-        html.A("Auf Spotify öffnen", href=f"https://open.spotify.com/track/{meta.get('song_id')}", target="_blank", className="mt-2 d-inline-block")
+        html.A("In Spotify öffnen", href=f"https://open.spotify.com/track/{meta.get('song_id')}", target="_blank", className="mt-2 d-inline-block")
     ])
     kpis = [
         ("Erstes Play", ov["first_play"][:10] if ov.get("first_play") else "—"),
@@ -201,51 +201,51 @@ def update_all(n, song_id_dropdown, song_id_text, start_date, end_date, year, th
     kpi_defs = [
         {
             "key": "first_play",
-            "label": "Erstes Play",
+            "label": "Zum ersten Mal gehört",
             "value": ov["first_play"][:10] if ov.get("first_play") else "—",
-            "help": "Erstes registriertes Play im gewählten Zeitraum.",
+            "help": "Der erste Stream im gewählten Zeitraum.",
         },
         {
             "key": "last_play",
-            "label": "Letztes Play",
+            "label": "Zuletzt gehört",
             "value": ov["last_play"][:10] if ov.get("last_play") else "—",
-            "help": "Letztes registriertes Play im gewählten Zeitraum.",
+            "help": "Der letzte Stream im gewählten Zeitraum.",
         },
         {
             "key": "unique_days",
-            "label": "Tage mit Plays",
+            "label": "An so vielen Tagen gehört",
             "value": f"{ov['unique_days']}",
-            "help": "Anzahl unterschiedlicher Kalendertage mit mindestens einem Play.",
+            "help": "An wie vielen verschiedenen Tagen du den Song mindestens einmal gehört hast.",
         },
         {
             "key": "longest_streak_days",
-            "label": "Längste Streak",
+            "label": "Längste Serie",
             "value": f"{ov['longest_streak_days']} Tage",
-            "help": "Längste Serie aufeinanderfolgender Tage mit mindestens einem Play.",
+            "help": "So viele Tage am Stück hast du den Song mindestens einmal gehört.",
         },
         {
             "key": "median_gap_days",
-            "label": "Median Gap",
+            "label": "Typischer Abstand",
             "value": f"{ov['median_gap_days']} d" if ov.get("median_gap_days") is not None else "—",
-            "help": "Median der Abstände zwischen zwei Plays (in Tagen). 50% der Abstände sind kürzer.",
+            "help": "So lange liegt normalerweise zwischen zwei Streams (Median: die Hälfte der Abstände ist kürzer).",
         },
         {
             "key": "mean_gap_days",
-            "label": "Ø Gap",
+            "label": "Durchschnittlicher Abstand",
             "value": f"{ov['mean_gap_days']} d" if ov.get("mean_gap_days") is not None else "—",
-            "help": "Arithmetischer Mittelwert der Abstände zwischen zwei Plays. Empfindlich für Ausreißer.",
+            "help": "Der Durchschnitt aller Abstände zwischen zwei Streams. Lange Pausen ziehen ihn stark nach oben.",
         },
         {
             "key": "current_silence_days",
-            "label": "Aktuelle Pause",
+            "label": "Seit dem letzten Mal",
             "value": f"{ov['current_silence_days']} d" if ov.get("current_silence_days") is not None else "—",
-            "help": "Tage seit dem letzten Play bis zum Ende des gewählten Zeitraums (oder bis heute).",
+            "help": "So viele Tage ist der letzte Stream her (bis zum Ende des Zeitraums bzw. bis heute).",
         },
         {
             "key": "days_to_50pct",
-            "label": "Tage bis 50%",
+            "label": "Halbzeit nach",
             "value": f"{ov['days_to_50pct']} d" if ov.get("days_to_50pct") is not None else "—",
-            "help": "Tage vom ersten Play bis zu dem Tag, an dem 50% der Gesamtplays erreicht waren.",
+            "help": "Nach so vielen Tagen ab dem ersten Stream hattest du die Hälfte aller Streams erreicht.",
         },
     ]
 
@@ -284,7 +284,7 @@ def update_all(n, song_id_dropdown, song_id_text, start_date, end_date, year, th
 
     # Heatmap für gewähltes Jahr
     if not year:
-        hm_child = dbc.Alert("Bitte Jahr für die Kalender-Heatmap wählen.", color="info")
+        hm_child = dbc.Alert("Wähl ein Jahr aus, dann siehst du hier den Kalender.", color="info")
     else:
         df_daily = cached_daily_song_counts(chosen_id, int(year), int(cache_ver or 0))
         fig_hm = build_song_heatmap_figure(df_daily, int(year), dark=dark)

@@ -15,7 +15,7 @@ from frontend_new.core.extensions import cache
 from frontend_new.services.song_search import _escape_like
 from frontend_new.services.sql_fragments import artists_of_song_expr
 
-KIND_LABELS = {"replaced": "ersetzt", "same_recording": "gleiche Aufnahme", "manual": "manuell"}
+KIND_LABELS = {"replaced": "veraltet", "same_recording": "weiteres Release", "manual": "von dir verbunden"}
 
 
 def song_group_ids(song_id: str) -> tuple[str, list[str]]:
@@ -178,7 +178,7 @@ def catalog_status() -> dict:
         """)).mappings().first()
         kinds = dict(conn.execute(text("SELECT kind, COUNT(*) FROM song_relations GROUP BY kind")).all())
         groups = conn.execute(text("SELECT COUNT(DISTINCT canonical_song_id) FROM song_relations")).scalar()
-        state = dict(conn.execute(text("SELECT name, CONCAT(value, ' (', updated_at, ')') FROM sync_state")).all())
+        state = {r[0]: (r[1], r[2]) for r in conn.execute(text("SELECT name, value, updated_at FROM sync_state"))}
         overrides = [dict(r) for r in conn.execute(text(f"""
             SELECT o.song_id, o.target_song_id, s.song_name, t.song_name AS target_name, o.created_at
             FROM song_relation_overrides o
@@ -200,11 +200,11 @@ def _song_exists(conn, song_id: str) -> bool:
 def merge_songs(song_id: str, target_song_id: str) -> str:
     song_id, target_song_id = (song_id or "").strip(), (target_song_id or "").strip()
     if not song_id or not target_song_id or song_id == target_song_id:
-        return "Bitte zwei unterschiedliche Song-IDs angeben."
+        return "Bitte gib zwei verschiedene Song-IDs ein."
     with engine.begin() as conn:
         for sid in (song_id, target_song_id):
             if not _song_exists(conn, sid):
-                return f"Song-ID {sid} ist nicht in der Datenbank."
+                return f"Den Song {sid} gibt es hier noch nicht – er muss mindestens einmal gehört worden sein."
         conn.execute(text("""
             INSERT INTO song_relation_overrides (song_id, target_song_id) VALUES (:s, :t)
             ON DUPLICATE KEY UPDATE target_song_id = VALUES(target_song_id), created_at = NOW()

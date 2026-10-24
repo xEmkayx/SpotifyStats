@@ -117,7 +117,7 @@ def update_listening_time(n_apply, start_date, end_date, cache_ver):
     end_dt = f"{end_date} 23:59"
     seconds = cached_total_listening_seconds(start_dt, end_dt, int(cache_ver or 0))
     pretty = format_duration_de(seconds)
-    return f"(Ungefähre) Gesamte Hörzeit: {pretty}"
+    return f"Etwa {pretty}"
 
 
 @callback(

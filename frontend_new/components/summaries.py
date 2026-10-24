@@ -8,7 +8,7 @@ def sid(scope: str, name: str) -> dict:
 
 def listening_time_summary(scope: str):
     return dbc.Card([
-    dbc.CardHeader("Gesamte Hörzeit"),
+    dbc.CardHeader("So lange hast du gehört"),
     dbc.CardBody([
     html.Div(id=sid(scope, "listening_time"), className="fw-semibold"),
     ], className="py-2")

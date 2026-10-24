@@ -25,8 +25,8 @@ def layout():
         scope=SCOPE,
         controls=[
             dropdown(SCOPE, "song", "Song", options=[], multi=False,
-                     placeholder="Tippe zum Suchen (min. 2 Zeichen)"),
-            text_input(SCOPE, "song_id", "Song-ID (optional)", placeholder="z. B. 4uLU6hMCjMI75M1A2tKUQC"),
+                     placeholder="Song oder Artist eintippen"),
+            text_input(SCOPE, "song_id", "…oder Song-ID", placeholder="z. B. 4uLU6hMCjMI75M1A2tKUQC"),
             dropdown(SCOPE, "year", "Jahr", options=_year_options(), multi=False, placeholder="Jahr wählen"),
         ],
         with_apply=True,
@@ -34,7 +34,7 @@ def layout():
     )
     right = [
         dbc.Card([
-            dbc.CardHeader("Hörhistorie (Kalender)"),
+            dbc.CardHeader("An welchen Tagen"),
             dbc.CardBody(
                 dcc.Loading(type="default", children=html.Div(id="song-hm", children=skeleton_graph()))
             ),
@@ -86,7 +86,7 @@ prevent_initial_call=True
 def update_heatmap(n, song_id_dropdown, song_id_text, year, theme, cache_ver):
     chosen_id = (song_id_dropdown or song_id_text or "").strip()
     if not chosen_id or not year:
-        return dbc.Alert("Bitte Song und Jahr wählen.", color="info")
+        return dbc.Alert("Wähl einen Song und ein Jahr aus.", color="info")
     df = cached_daily_song_counts(chosen_id, int(year), int(cache_ver or 0))
     fig = build_song_heatmap_figure(df, int(year), dark=(theme == "dark"))
     return dcc.Graph(figure=fig, config={"displayModeBar": True})

@@ -8,21 +8,21 @@ from common.playlists import actions, history
 from frontend_new.components.empty_state import empty_state
 from frontend_new.core.data_version import bump_data_version
 from frontend_new.services.playlists import (
-    playlist_overview, playlist_info, snapshots, snapshot_diff, diff_summary, local_time
+    playlist_overview, playlist_info, snapshots, snapshot_diff, diff_summary, local_time, count
 )
 from frontend_new.services.spotify_images import spotify_client
 
 dash.register_page(__name__, path="/playlists", name="Playlists", group="Bibliothek", order=30)
 
 OP_STYLE = {
-    "added": ("+", "success", "hinzugefügt"),
+    "added": ("+", "success", "neu"),
     "removed": ("−", "danger", "entfernt"),
     "moved": ("↕", "info", "verschoben"),
-    "replaced": ("⇄", "warning", "Version ersetzt"),
+    "replaced": ("⇄", "warning", "neue Version"),
 }
-REASON_LABELS = {"initial": "erster Stand", "sync": "Änderung", "manual": "manuell geladen",
-                 "before_restore": "vor Zurücksetzen", "restore": "zurückgesetzt",
-                 "before_replace": "vor Ersetzen", "replace": "Versionen ersetzt"}
+REASON_LABELS = {"initial": "zum ersten Mal gespeichert", "sync": "geändert", "manual": "von dir geprüft",
+                 "before_restore": "Sicherung vor dem Wiederherstellen", "restore": "wiederhergestellt",
+                 "before_replace": "Sicherung vor dem Austauschen", "replace": "Versionen ausgetauscht"}
 DIFF_LIMIT = 300
 
 
@@ -37,15 +37,15 @@ def _overview_layout():
         dbc.Row([
             dbc.Col(dbc.Input(id="pl-search", placeholder="Playlist suchen", debounce=True), md=5),
             dbc.Col(dbc.Select(id="pl-sort", value="changed", options=[
-                {"label": "Sortieren: zuletzt geändert", "value": "changed"},
-                {"label": "Sortieren: Name", "value": "name"},
-                {"label": "Sortieren: Anzahl Titel", "value": "tracks"},
-                {"label": "Sortieren: ersetzte Versionen", "value": "superseded"}]), md=4),
-            dbc.Col(dbc.Checkbox(id="pl-deleted", label="Gelöschte anzeigen", value=False), md=3,
+                {"label": "Zuletzt geändert", "value": "changed"},
+                {"label": "Name A–Z", "value": "name"},
+                {"label": "Meiste Songs", "value": "tracks"},
+                {"label": "Meiste veraltete Versionen", "value": "superseded"}]), md=4),
+            dbc.Col(dbc.Checkbox(id="pl-deleted", label="Gelöschte Playlists anzeigen", value=False), md=3,
                     className="d-flex align-items-center"),
         ], className="g-2 mb-3"),
-        html.Small("Nur eigene Playlists (von Spotify generierte und fremde werden nicht verfolgt). "
-                   "Der Abgleich läuft stündlich im Backend.", className="text-muted d-block mb-2"),
+        html.Small("Hier siehst du deine eigenen Playlists. Playlists von Spotify oder anderen Leuten sind nicht "
+                   "dabei. Änderungen werden jede Stunde gespeichert.", className="text-muted d-block mb-2"),
         dcc.Loading(html.Div(id="pl-list")),
     ])
 
@@ -55,7 +55,8 @@ def _playlist_row(p: dict):
     if p["deleted_at"]:
         badges.append(dbc.Badge("gelöscht", color="danger", className="me-1"))
     if p["superseded"]:
-        badges.append(dbc.Badge(f"{p['superseded']} ersetzte Versionen", color="warning", className="me-1"))
+        badges.append(dbc.Badge(count(p["superseded"], "veraltete Version", "veraltete Versionen"),
+                                color="warning", className="me-1"))
     img = html.Img(src=p["image_url"], style={"width": "48px", "height": "48px", "objectFit": "cover",
                                              "borderRadius": "6px"}) if p["image_url"] else \
         html.Div(html.I(className="bi bi-music-note-list"), className="text-muted",
@@ -65,7 +66,8 @@ def _playlist_row(p: dict):
         img,
         html.Div([
             html.Div([html.Span(p["name"] or p["playlist_id"], className="fw-semibold me-2"), *badges]),
-            html.Small(f"{p['track_count'] or 0} Titel · {p['snapshots']} Stände · zuletzt geändert "
+            html.Small(f"{count(p['track_count'], 'Song', 'Songs')} · "
+                       f"{count(p['snapshots'], 'gespeicherter Stand', 'gespeicherte Stände')} · geändert am "
                        f"{local_time(p['last_changed_at'] or p['first_seen_at'])}", className="text-muted"),
         ], className="ms-3 flex-grow-1"),
         html.I(className="bi bi-chevron-right text-muted"),
@@ -82,7 +84,7 @@ def _playlist_row(p: dict):
 def update_list(search, sort, include_deleted, cache_ver):
     items = playlist_overview((search or "").strip(), sort or "changed", bool(include_deleted), int(cache_ver or 0))
     if not items:
-        return empty_state("Noch keine Playlists", "Der erste Abgleich läuft im Backend (stündlich).",
+        return empty_state("Noch keine Playlists", "Deine Playlists werden beim nächsten stündlichen Abgleich geladen.",
                            icon="bi bi-music-note-list")
     return [html.Small(f"{len(items)} Playlists", className="text-muted d-block mb-2"),
             dbc.ListGroup([_playlist_row(p) for p in items])]
@@ -125,9 +127,9 @@ def _diff_view(changes: list[dict]):
 def _detail_layout(playlist_id: str):
     p = playlist_info(playlist_id)
     if not p:
-        return empty_state("Playlist unbekannt", "Zurück zur Übersicht.", icon="bi bi-question-circle")
+        return empty_state("Diese Playlist gibt es hier nicht", "Zurück zur Übersicht.", icon="bi bi-question-circle")
     snaps = snapshots(playlist_id)
-    options = [{"label": f"{local_time(s['taken_at'])} · {s['track_count']} Titel · "
+    options = [{"label": f"{local_time(s['taken_at'])} · {count(s['track_count'], 'Song', 'Songs')} · "
                          f"{REASON_LABELS.get(s['reason'], s['reason'])}", "value": s["id"]} for s in snaps]
     latest = snaps[0]["id"] if snaps else None
     previous = snaps[1]["id"] if len(snaps) > 1 else None
@@ -140,13 +142,14 @@ def _detail_layout(playlist_id: str):
                        className="small d-block mb-1"),
                 html.Span(p["name"], className="h5 me-2"),
                 dbc.Badge("gelöscht", color="danger") if p["deleted_at"] else None,
-                html.Small(f"{p['track_count'] or 0} Titel · {len(snaps)} Stände · zuletzt abgeglichen "
-                           f"{local_time(p['last_synced_at'])}", className="text-muted d-block"),
+                html.Small(f"{count(p['track_count'], 'Song', 'Songs')} · "
+                           f"{count(len(snaps), 'gespeicherter Stand', 'gespeicherte Stände')} · zuletzt geprüft "
+                           f"am {local_time(p['last_synced_at'])}", className="text-muted d-block"),
             ]),
             html.Div([
-                dbc.Button([html.I(className="bi bi-arrow-repeat me-1"), "Jetzt abgleichen"], id="pl-sync",
+                dbc.Button([html.I(className="bi bi-arrow-repeat me-1"), "Jetzt prüfen"], id="pl-sync",
                            size="sm", color="secondary", outline=True, className="me-2"),
-                dbc.Button([html.I(className="bi bi-arrow-left-right me-1"), "Ersetzte Versionen austauschen"],
+                dbc.Button([html.I(className="bi bi-arrow-left-right me-1"), "Veraltete Versionen austauschen"],
                            id="pl-replace-open", size="sm", color="warning", outline=True),
             ]),
         ], className="d-flex justify-content-between align-items-start flex-wrap gap-2")), className="mb-3"),
@@ -157,7 +160,8 @@ def _detail_layout(playlist_id: str):
                 dbc.CardBody(dbc.ListGroup([
                     dbc.ListGroupItem([
                         html.Div(local_time(s["taken_at"]), className="fw-semibold small"),
-                        html.Small(f"{s['track_count']} Titel · {REASON_LABELS.get(s['reason'], s['reason'])}",
+                        html.Small(f"{count(s['track_count'], 'Song', 'Songs')} · "
+                                   f"{REASON_LABELS.get(s['reason'], s['reason'])}",
                                    className="text-muted"),
                     ], id={"type": "pl-snap", "id": s["id"]}, action=True, n_clicks=0)
                     for s in snaps[:100]
@@ -165,7 +169,7 @@ def _detail_layout(playlist_id: str):
             ]), md=4, className="mb-3"),
             dbc.Col(dbc.Card([
                 dbc.CardHeader(dbc.Row([
-                    dbc.Col(dbc.Select(id="pl-from", options=[{"label": "(leer)", "value": 0}] + options,
+                    dbc.Col(dbc.Select(id="pl-from", options=[{"label": "Leere Playlist", "value": 0}] + options,
                                        value=previous or 0), md=5),
                     dbc.Col(html.Div("→", className="text-center"), md=1),
                     dbc.Col(dbc.Select(id="pl-to", options=options, value=latest), md=6),
@@ -175,11 +179,11 @@ def _detail_layout(playlist_id: str):
                     html.Hr(),
                     # Lieblingssongs haben keine Reihenfolge, die sich über die API setzen ließe.
                     # Button nur ausblenden: fehlt ein Input im Layout, feuert Dash den Callback gar nicht.
-                    html.Small("Lieblingssongs lassen sich nicht zurücksetzen (Spotify sortiert sie nach "
-                               "Hinzufüge-Datum).", className="text-muted")
+                    html.Small("Lieblingssongs lassen sich nicht zurücksetzen, weil Spotify sie immer nach dem "
+                               "Datum sortiert, an dem du sie gespeichert hast.", className="text-muted")
                     if playlist_id == history.LIKED_ID else None,
                     dbc.Button([html.I(className="bi bi-arrow-counterclockwise me-1"),
-                                "Playlist auf den rechten Stand zurücksetzen"],
+                                "Rechten Stand wiederherstellen"],
                                id="pl-restore-open", size="sm", color="primary",
                                disabled=not (len(snaps) >= 2 or (p["deleted_at"] and snaps)),
                                style={"display": "none"} if playlist_id == history.LIKED_ID else None),
@@ -191,7 +195,7 @@ def _detail_layout(playlist_id: str):
             dbc.ModalBody(id="pl-modal-body", style={"maxHeight": "60vh", "overflowY": "auto"}),
             dbc.ModalFooter([
                 dbc.Button("Abbrechen", id="pl-modal-cancel", color="secondary", outline=True),
-                dbc.Button("Ausführen", id="pl-modal-confirm", color="primary"),
+                dbc.Button("Ja, mach das", id="pl-modal-confirm", color="primary"),
             ]),
         ], id="pl-modal", is_open=False, size="lg", centered=True),
     ])
@@ -248,30 +252,29 @@ def open_modal(_restore, _replace, _cancel, playlist_id, target_pk):
     try:
         if ctx.triggered_id == "pl-restore-open":
             prev = actions.preview_restore(int(target_pk))
-            body = [html.P("So ändert sich die Playlist gegenüber dem aktuellen Stand. Der aktuelle Stand wird "
-                           "vorher gesichert und lässt sich wieder herstellen.", className="small"),
+            body = [html.P("So ändert sich deine Playlist im Vergleich zu jetzt. Der aktuelle Stand wird vorher "
+                           "gespeichert, du kannst also jederzeit zurück.", className="small"),
                     _diff_view(prev["changes"])]
             if prev["local_files"]:
-                body.insert(0, dbc.Alert(f"{prev['local_files']} lokale Dateien können nicht wiederhergestellt "
-                                         "werden.", color="warning"))
-            return True, "Auf diesen Stand zurücksetzen?", body, \
+                body.insert(0, dbc.Alert(f"{prev['local_files']} lokale Dateien kann Spotify nicht wieder "
+                                         "einfügen, die fehlen danach.", color="warning"))
+            return True, "Diesen Stand wiederherstellen?", body, \
                 {"action": "restore", "snapshot": int(target_pk), "hash": prev["expected_hash"]}
         todo, digest = actions.superseded_items(playlist_id)
         if not todo:
-            return True, "Ersetzte Versionen", html.Div("Keine ersetzten Versionen gefunden.",
-                                                         className="text-muted"), None
-        note = ("Die neuen Versionen landen bei den Lieblingssongs oben in der Liste (Spotify erlaubt kein "
-                "Setzen des Datums)." if playlist_id == history.LIKED_ID else
-                "Positionen bleiben erhalten; das Hinzufüge-Datum setzt Spotify neu.")
-        rows = [html.Tr([html.Td(it["position"] + 1, className="text-muted"),
-                         html.Td([html.Span(it["name"]), html.Small(f" · {it['artists']}", className="text-muted")]),
-                         html.Td(html.Small(f"{it['track_id']} → {it['new_id']}", className="font-monospace"))])
+            return True, "Alles aktuell", html.Div("Hier gibt es keine veralteten Versionen.",
+                                                    className="text-muted"), None
+        note = ("Die neuen Versionen erscheinen bei deinen Lieblingssongs ganz oben, weil Spotify das "
+                "ursprüngliche Datum nicht übernehmen kann." if playlist_id == history.LIKED_ID else
+                "Die Songs bleiben an derselben Stelle. Nur das Hinzufüge-Datum setzt Spotify neu.")
+        rows = [html.Tr([html.Td(f"Platz {it['position'] + 1}", className="text-muted text-nowrap"),
+                         html.Td([html.Span(it["name"]), html.Small(f" · {it['artists']}", className="text-muted")])])
                 for it in todo]
-        return True, f"{len(todo)} ersetzte Versionen austauschen?", \
+        return True, f"{count(len(todo), 'veraltete Version', 'veraltete Versionen')} austauschen?", \
             [html.P(note, className="small"), dbc.Table(html.Tbody(rows), size="sm")], \
             {"action": "replace", "playlist": playlist_id, "hash": digest}
     except actions.PlaylistActionError as e:
-        return True, "Nicht möglich", dbc.Alert(str(e), color="warning"), None
+        return True, "Das geht leider nicht", dbc.Alert(str(e), color="warning"), None
 
 
 @callback(
@@ -287,12 +290,12 @@ def open_modal(_restore, _replace, _cancel, playlist_id, target_pk):
 def run_action(_confirm, _sync, pending, playlist_id):
     if not ctx.triggered[0]["value"]:
         return no_update, no_update, no_update
-    reload_hint = html.A(" Neu laden", href=f"/playlists?id={playlist_id}", className="alert-link")
+    reload_hint = html.A(" Seite neu laden", href=f"/playlists?id={playlist_id}", className="alert-link")
     try:
         sp = spotify_client()
         if ctx.triggered_id == "pl-sync":
             changed = history.sync_playlist_by_id(sp, playlist_id)
-            msg = "Neuer Stand gespeichert." if changed else "Keine Änderungen seit dem letzten Abgleich."
+            msg = "Neuer Stand gespeichert." if changed else "Seit der letzten Prüfung hat sich nichts geändert."
         elif not pending:
             return no_update, False, no_update
         elif pending["action"] == "restore":
@@ -302,5 +305,5 @@ def run_action(_confirm, _sync, pending, playlist_id):
     except actions.PlaylistActionError as e:
         return dbc.Alert(str(e), color="warning"), False, no_update
     except Exception as e:
-        return dbc.Alert(f"Fehler: {e}", color="danger"), False, no_update
+        return dbc.Alert(f"Da ist etwas schiefgegangen: {e}", color="danger"), False, no_update
     return dbc.Alert([msg, reload_hint], color="success"), False, bump_data_version()

@@ -114,7 +114,7 @@ State("cache-version", "data"),
 def update_listening_time(_, start_date, end_date, cache_ver):
     if not start_date or not end_date: return no_update
     secs = cached_total_listening_seconds(f"{start_date} 00:00", f"{end_date} 23:59", int(cache_ver or 0))
-    return f"(Ungefähre) Gesamte Hörzeit: {format_duration_de(secs)}"
+    return f"Etwa {format_duration_de(secs)}"
 
 
 # Karten aktualisieren
@@ -130,7 +130,7 @@ State("cache-version", "data"),
 )
 def update_cards(n_apply, category, metric, start_date, end_date, top_n, cache_ver):
     if not start_date or not end_date:
-        return empty_state("Keine Daten", "Bitte Zeitraum wählen.")
+        return empty_state("Wähl einen Zeitraum aus", "Dann siehst du hier deine Top-Songs.")
     start_dt = f"{start_date} 00:00"
     end_dt   = f"{end_date} 23:59"
     metric = (metric or "plays").lower()
@@ -139,7 +139,7 @@ def update_cards(n_apply, category, metric, start_date, end_date, top_n, cache_v
     try:
         if category == "artists":
             df = top_artists_data(start_dt, end_dt, top_n, metric, int(cache_ver or 0))
-            if df.empty: return empty_state("Keine Artists im Zeitraum", "Filter anpassen.", "bi bi-person")
+            if df.empty: return empty_state("Keine Artists in diesem Zeitraum", "Probier einen anderen Zeitraum.", "bi bi-person")
             # Bilder (Batch)
             img_map = images_or_empty(artist_images, df["artist_id"].tolist())
             df["image_url"] = df["artist_id"].map(img_map).fillna("")
@@ -148,7 +148,7 @@ def update_cards(n_apply, category, metric, start_date, end_date, top_n, cache_v
 
         elif category == "albums":
             df = top_albums_data(start_dt, end_dt, top_n, metric, int(cache_ver or 0))
-            if df.empty: return empty_state("Keine Alben im Zeitraum", "Filter anpassen.", "bi bi-disc")
+            if df.empty: return empty_state("Keine Alben in diesem Zeitraum", "Probier einen anderen Zeitraum.", "bi bi-disc")
             img_map = images_or_empty(album_images, df["album_id"].tolist())
             df["image_url"] = df["album_id"].map(img_map).fillna("")
             items = map_album_items(df)
@@ -156,14 +156,14 @@ def update_cards(n_apply, category, metric, start_date, end_date, top_n, cache_v
 
         else:  # songs
             df = top_songs_data(start_dt, end_dt, top_n, metric, int(cache_ver or 0))
-            if df.empty: return empty_state("Keine Songs im Zeitraum", "Filter anpassen.", "bi bi-music-note")
+            if df.empty: return empty_state("Keine Songs in diesem Zeitraum", "Probier einen anderen Zeitraum.", "bi bi-music-note")
             img_map = images_or_empty(track_images, df["song_id"].tolist())
             df["image_url"] = df["song_id"].map(img_map).fillna("")
             items = map_song_items(df)
             return cards_grid(items, "songs")
 
     except Exception as e:
-        return empty_state("Fehler beim Laden", str(e), "bi bi-exclamation-triangle")
+        return empty_state("Das hat nicht geklappt", str(e), "bi bi-exclamation-triangle")
 
 
 @callback(

@@ -168,16 +168,16 @@ def _run(ids: list[str], state_name: str) -> dict:
         return {"skipped": True}
     try:
         started = time.time()
-        _set_state(f"{state_name}_status", f"running ({len(ids)} Songs)")
+        _set_state(f"{state_name}_status", f"läuft gerade ({len(ids)} Songs)")
         stats = sync_songs(ids)
         with engine.begin() as conn:
             stats["relations"] = rebuild_relations(conn)
-        _set_state(f"{state_name}_status", f"ok: {stats['checked']} Songs, {stats['changes']} Änderungen, "
-                                           f"{time.time() - started:.0f}s")
+        _set_state(f"{state_name}_status", f"fertig – {stats['checked']} Songs geprüft, "
+                                           f"{stats['changes']} Änderungen, {time.time() - started:.0f} s")
         logging.info(f"Katalog-Abgleich ({state_name}) fertig: {stats}")
         return stats
     except Exception as e:
-        _set_state(f"{state_name}_status", f"Fehler: {e}"[:200])
+        _set_state(f"{state_name}_status", f"fehlgeschlagen: {e}"[:200])
         raise
     finally:
         _sync_lock.release()

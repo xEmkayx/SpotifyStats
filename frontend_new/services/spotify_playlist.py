@@ -20,7 +20,7 @@ def create_playlist_from_current_filters(
     ids = top_song_ids(start_dt, end_dt, int(top_n or 30), metric, int(cache_version or 0))
 
     if not ids:
-        return False, "Keine Songs für den aktuellen Zeitraum/Metrik gefunden.", None
+        return False, "Für diesen Zeitraum gibt es keine Songs.", None
 
     # 2) Spotify Client
     try:
