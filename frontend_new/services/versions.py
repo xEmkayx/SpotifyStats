@@ -239,3 +239,27 @@ def dismiss_suggestion(song_a: str, song_b: str) -> str:
         conn.execute(text("INSERT IGNORE INTO song_suggestion_dismissals (song_a, song_b) VALUES (:a, :b)"),
                      {"a": a, "b": b})
     return "ok"
+
+
+def merge_many(pairs: list[tuple[str, str]]) -> int:
+    """Mehrere Paare (song_id, ziel) auf einmal verbinden, Gruppen nur einmal neu berechnen."""
+    pairs = [(a, b) for a, b in pairs if a and b and a != b]
+    if not pairs:
+        return 0
+    with engine.begin() as conn:
+        conn.execute(text("""
+            INSERT INTO song_relation_overrides (song_id, target_song_id) VALUES (:s, :t)
+            ON DUPLICATE KEY UPDATE target_song_id = VALUES(target_song_id), created_at = NOW()
+        """), [{"s": a, "t": b} for a, b in pairs])
+        conn.execute(text("DELETE FROM song_relation_overrides WHERE song_id IN :ids AND target_song_id IS NULL")
+                     .bindparams(bindparam("ids", expanding=True)), {"ids": [b for _, b in pairs]})
+        rebuild_relations(conn)
+    return len(pairs)
+
+
+def dismiss_many(pairs: list[tuple[str, str]]) -> int:
+    rows = [dict(zip(("a", "b"), sorted(p))) for p in pairs if p[0] and p[1]]
+    if rows:
+        with engine.begin() as conn:
+            conn.execute(text("INSERT IGNORE INTO song_suggestion_dismissals (song_a, song_b) VALUES (:a, :b)"), rows)
+    return len(rows)

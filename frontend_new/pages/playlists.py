@@ -4,13 +4,14 @@ import dash
 import dash_bootstrap_components as dbc
 from dash import dcc, html, Input, Output, State, callback, ctx, ALL, no_update, dash_table
 
-from common.playlists import actions, history
+from common import settings
+from common.playlists import actions, bulk, history
 from frontend_new.components.empty_state import empty_state
 from frontend_new.core.data_version import bump_data_version
 from frontend_new.services.playlists import (
     playlist_overview, playlist_info, snapshots, snapshot_diff, diff_summary, local_time, count
 )
-from frontend_new.services.spotify_images import spotify_client
+from frontend_new.services.spotify_images import spotify_client, library_write_allowed
 
 dash.register_page(__name__, path="/playlists", name="Playlists", group="Bibliothek", order=30)
 
@@ -40,13 +41,34 @@ def _overview_layout():
                 {"label": "Zuletzt geändert", "value": "changed"},
                 {"label": "Name A–Z", "value": "name"},
                 {"label": "Meiste Songs", "value": "tracks"},
-                {"label": "Meiste veraltete Versionen", "value": "superseded"}]), md=4),
+                {"label": "Meiste Songs mit neuerer Version", "value": "superseded"}]), md=4),
             dbc.Col(dbc.Checkbox(id="pl-deleted", label="Gelöschte Playlists anzeigen", value=False), md=3,
                     className="d-flex align-items-center"),
         ], className="g-2 mb-3"),
         html.Small("Hier siehst du deine eigenen Playlists. Playlists von Spotify oder anderen Leuten sind nicht "
-                   "dabei. Änderungen werden jede Stunde gespeichert.", className="text-muted d-block mb-2"),
-        dcc.Loading(html.Div(id="pl-list")),
+                   "dabei. Änderungen werden jede Stunde gespeichert.", className="text-muted d-block mb-3"),
+        html.Div(id="pl-feedback-overview", className="toast-area"),
+        dcc.Store(id="pl-bulk-refresh", data=0),
+        dcc.Interval(id="pl-bulk-poll", interval=3000, disabled=False),
+        html.Div(id="pl-bulk-info"),
+        dcc.Loading(html.Div(id="pl-list"), delay_show=600),
+        dbc.Modal([
+            dbc.ModalHeader(dbc.ModalTitle("Veraltete Versionen austauschen")),
+            dbc.ModalBody([
+                html.P("Spotify hat diese Songs durch eine neuere Version ersetzt. Beim Austauschen bleibt jeder Song "
+                       "an seiner Stelle; vorher wird der aktuelle Stand jeder Playlist gespeichert, damit du im "
+                       "Verlauf siehst, was sich geändert hat.", className="small"),
+                html.Div([
+                    dbc.Button("Alle", id="pl-bulk-all", size="sm", color="secondary", outline=True, className="me-1"),
+                    dbc.Button("Keine", id="pl-bulk-none", size="sm", color="secondary", outline=True),
+                ], className="mb-2"),
+                dbc.Checklist(id="pl-bulk-select", options=[], value=[], className="select-list"),
+            ]),
+            dbc.ModalFooter([
+                dbc.Button("Abbrechen", id="pl-bulk-cancel", color="secondary", outline=True),
+                dbc.Button("Austauschen", id="pl-bulk-confirm", color="primary"),
+            ]),
+        ], id="pl-bulk-modal", is_open=False, size="lg", centered=True),
     ])
 
 
@@ -55,8 +77,10 @@ def _playlist_row(p: dict):
     if p["deleted_at"]:
         badges.append(dbc.Badge("gelöscht", color="danger", className="me-1"))
     if p["superseded"]:
-        badges.append(dbc.Badge(count(p["superseded"], "veraltete Version", "veraltete Versionen"),
-                                color="warning", className="me-1"))
+        badges.append(dbc.Badge(count(p["superseded"], "Song mit neuerer Version", "Songs mit neuerer Version"),
+                                color="warning", className="me-1",
+                                title="Noch nicht ausgetauscht – das passiert erst, wenn du es auslöst oder "
+                                      "in den Einstellungen automatisch einschaltest."))
     img = html.Img(src=p["image_url"], style={"width": "48px", "height": "48px", "objectFit": "cover",
                                              "borderRadius": "6px"}) if p["image_url"] else \
         html.Div(html.I(className="bi bi-music-note-list"), className="text-muted",
@@ -153,7 +177,7 @@ def _detail_layout(playlist_id: str):
                            id="pl-replace-open", size="sm", color="warning", outline=True),
             ]),
         ], className="d-flex justify-content-between align-items-start flex-wrap gap-2")), className="mb-3"),
-        html.Div(id="pl-feedback"),
+        html.Div(id="pl-feedback", className="toast-area"),
         dbc.Row([
             dbc.Col(dbc.Card([
                 dbc.CardHeader("Verlauf"),
@@ -267,11 +291,20 @@ def open_modal(_restore, _replace, _cancel, playlist_id, target_pk):
         note = ("Die neuen Versionen erscheinen bei deinen Lieblingssongs ganz oben, weil Spotify das "
                 "ursprüngliche Datum nicht übernehmen kann." if playlist_id == history.LIKED_ID else
                 "Die Songs bleiben an derselben Stelle. Nur das Hinzufüge-Datum setzt Spotify neu.")
-        rows = [html.Tr([html.Td(f"Platz {it['position'] + 1}", className="text-muted text-nowrap"),
-                         html.Td([html.Span(it["name"]), html.Small(f" · {it['artists']}", className="text-muted")])])
-                for it in todo]
-        return True, f"{count(len(todo), 'veraltete Version', 'veraltete Versionen')} austauschen?", \
-            [html.P(note, className="small"), dbc.Table(html.Tbody(rows), size="sm")], \
+        options = [{"label": f"Platz {it['position'] + 1} · {it['name']} · {it['artists']}", "value": it["position"]}
+                   for it in todo]
+        body = [
+            html.P(note + " Abgewählte Songs bleiben, wie sie sind.", className="small"),
+            html.Div([
+                dbc.Button("Alle", id={"type": "pl-replace-toggle", "mode": "all"}, size="sm", color="secondary",
+                           outline=True, className="me-1"),
+                dbc.Button("Keine", id={"type": "pl-replace-toggle", "mode": "none"}, size="sm", color="secondary",
+                           outline=True),
+            ], className="mb-2"),
+            dbc.Checklist(id={"type": "pl-replace-select", "n": 0}, options=options,
+                          value=[o["value"] for o in options], className="select-list"),
+        ]
+        return True, f"{count(len(todo), 'Song hat', 'Songs haben')} eine neuere Version", body, \
             {"action": "replace", "playlist": playlist_id, "hash": digest}
     except actions.PlaylistActionError as e:
         return True, "Das geht leider nicht", dbc.Alert(str(e), color="warning"), None
@@ -285,9 +318,10 @@ def open_modal(_restore, _replace, _cancel, playlist_id, target_pk):
     Input("pl-sync", "n_clicks"),
     State("pl-pending", "data"),
     State("pl-id", "data"),
+    State({"type": "pl-replace-select", "n": ALL}, "value"),
     prevent_initial_call=True
 )
-def run_action(_confirm, _sync, pending, playlist_id):
+def run_action(_confirm, _sync, pending, playlist_id, selected):
     if not ctx.triggered[0]["value"]:
         return no_update, no_update, no_update
     reload_hint = html.A(" Seite neu laden", href=f"/playlists?id={playlist_id}", className="alert-link")
@@ -301,9 +335,127 @@ def run_action(_confirm, _sync, pending, playlist_id):
         elif pending["action"] == "restore":
             msg = actions.restore_snapshot(sp, pending["snapshot"], pending["hash"])
         else:
-            msg = actions.replace_superseded(sp, pending["playlist"], pending["hash"])
-    except actions.PlaylistActionError as e:
-        return dbc.Alert(str(e), color="warning"), False, no_update
+            positions = selected[0] if selected else None
+            if positions is not None and not positions:
+                return dbc.Alert("Du hast keinen Song ausgewählt.", color="info", duration=3000), False, no_update
+            msg = actions.replace_superseded(sp, pending["playlist"], pending["hash"], positions)
+    except (actions.PlaylistActionError, RuntimeError) as e:
+        # Verständliche Meldungen (z. B. fehlende Spotify-Verbindung) ohne Zusatz anzeigen
+        return dbc.Alert(str(e), color="warning", dismissable=True), False, no_update
     except Exception as e:
-        return dbc.Alert(f"Da ist etwas schiefgegangen: {e}", color="danger"), False, no_update
-    return dbc.Alert([msg, reload_hint], color="success"), False, bump_data_version()
+        return dbc.Alert(f"Da ist etwas schiefgegangen: {e}", color="danger", dismissable=True), False, no_update
+    return dbc.Alert([msg, reload_hint], color="success", dismissable=True), False, bump_data_version()
+
+
+@callback(
+    Output({"type": "pl-replace-select", "n": ALL}, "value"),
+    Input({"type": "pl-replace-toggle", "mode": ALL}, "n_clicks"),
+    State({"type": "pl-replace-select", "n": ALL}, "options"),
+    prevent_initial_call=True
+)
+def toggle_replace_selection(_clicks, options):
+    if not ctx.triggered or not ctx.triggered[0]["value"]:
+        return [no_update] * len(options)
+    select_all = ctx.triggered_id["mode"] == "all"
+    return [[o["value"] for o in opts] if select_all else [] for opts in options]
+
+
+# --- Sammelaustausch in der Übersicht ---
+
+def _bulk_status_line():
+    value, updated = bulk.status()
+    if not value:
+        return None
+    running = bulk.is_running()
+    if not running and value.startswith("läuft"):
+        value = "wurde unterbrochen (" + value + ")"
+    icon = "bi bi-arrow-repeat" if running else "bi bi-check2-circle"
+    return html.Small([html.I(className=f"{icon} me-1"),
+                       f"Austausch {value}" + ("" if running else f" ({local_time(updated)})")],
+                      className="text-muted d-block mt-1")
+
+
+@callback(
+    Output("pl-bulk-info", "children"),
+    Output("pl-bulk-poll", "disabled"),
+    Input("pl-bulk-poll", "n_intervals"),
+    Input("pl-bulk-refresh", "data"),
+)
+def update_bulk_info(_n, _refresh):
+    overview = bulk.superseded_overview()
+    total = sum(p["superseded"] for p in overview)
+    auto = settings.get_flag(settings.AUTO_REPLACE_PLAYLISTS)
+    auto_text = ("Neue veraltete Versionen werden automatisch ausgetauscht. " if auto else
+                 "Automatisch austauschen kannst du in den ")
+    running = bulk.is_running()
+    if not total and not running:
+        return None, True
+    info = dbc.Card(dbc.CardBody(html.Div([
+        html.Div([
+            html.Div(f"{count(total, 'Song', 'Songs')} in {count(len(overview), 'Playlist', 'Playlists')} "
+                     f"{'hat' if total == 1 else 'haben'} eine neuere Version.", className="fw-semibold"),
+            html.Small([auto_text, html.A("Einstellungen", href="/settings") if not auto else
+                        html.A("Einstellung ändern", href="/settings"), "" if auto else " einschalten."],
+                       className="text-muted d-block"),
+            _bulk_status_line(),
+        ]),
+        dbc.Button("Austauschen …", id="pl-bulk-open", color="warning", outline=True, size="sm",
+                   disabled=running),
+    ], className="d-flex justify-content-between align-items-start gap-3 flex-wrap"), className="py-2"),
+        className="mb-3")
+    return info, not running
+
+
+@callback(
+    Output("pl-bulk-modal", "is_open"),
+    Output("pl-bulk-select", "options"),
+    Output("pl-bulk-select", "value"),
+    Input("pl-bulk-open", "n_clicks"),
+    Input("pl-bulk-cancel", "n_clicks"),
+    Input("pl-bulk-all", "n_clicks"),
+    Input("pl-bulk-none", "n_clicks"),
+    State("pl-bulk-select", "options"),
+    prevent_initial_call=True
+)
+def bulk_modal(_open, _cancel, _all, _none, options):
+    if not ctx.triggered or not ctx.triggered[0]["value"]:
+        return no_update, no_update, no_update
+    if ctx.triggered_id == "pl-bulk-cancel":
+        return False, no_update, no_update
+    if ctx.triggered_id in ("pl-bulk-all", "pl-bulk-none"):
+        selectable = [o["value"] for o in options if not o.get("disabled")]
+        return no_update, no_update, selectable if ctx.triggered_id == "pl-bulk-all" else []
+    liked_ok = library_write_allowed()
+    options = []
+    for p in bulk.superseded_overview():
+        disabled = p["playlist_id"] == history.LIKED_ID and not liked_ok
+        label = f"{p['name']} · {count(p['superseded'], 'Song', 'Songs')}"
+        if disabled:
+            label += " (dafür fehlt noch eine Spotify-Berechtigung)"
+        options.append({"label": label, "value": p["playlist_id"], "disabled": disabled})
+    return True, options, [o["value"] for o in options if not o["disabled"]]
+
+
+@callback(
+    Output("pl-feedback-overview", "children"),
+    Output("pl-bulk-modal", "is_open", allow_duplicate=True),
+    Output("pl-bulk-refresh", "data"),
+    Input("pl-bulk-confirm", "n_clicks"),
+    State("pl-bulk-select", "value"),
+    State("pl-bulk-refresh", "data"),
+    prevent_initial_call=True
+)
+def bulk_confirm(_n, selected, refresh):
+    if not selected:
+        return dbc.Alert("Du hast keine Playlist ausgewählt.", color="info", duration=3000), no_update, no_update
+    try:
+        started = bulk.replace_many_in_background(spotify_client(), list(selected))
+    except RuntimeError as e:
+        return dbc.Alert(str(e), color="warning", dismissable=True), False, no_update
+    except Exception as e:
+        return dbc.Alert(f"Da ist etwas schiefgegangen: {e}", color="danger", dismissable=True), False, no_update
+    if not started:
+        return dbc.Alert("Es läuft schon ein Austausch.", color="info", duration=4000), False, no_update
+    return dbc.Alert(f"Los geht's – {count(len(selected), 'Playlist wird', 'Playlists werden')} im Hintergrund "
+                     "aktualisiert. Den Fortschritt siehst du oben.", color="success", duration=5000), \
+        False, (refresh or 0) + 1

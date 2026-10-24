@@ -41,8 +41,11 @@ def _scheduled_catalog_sync():
 
 def _scheduled_playlist_sync():
     try:
-        from common.playlists import history
-        history.sync_all(auth.get_authenticated_spotify_client())
+        from common.playlists import bulk, history
+        sp = auth.get_authenticated_spotify_client()
+        history.sync_all(sp)
+        # Veraltete Versionen austauschen, falls in den Einstellungen aktiviert
+        bulk.run_auto_replace(sp)
     except Exception:
         logging.exception('Scheduled playlist sync failed.')
 

@@ -19,6 +19,15 @@ def spotify_client():
     return auth.get_authenticated_spotify_client()
 
 
+def library_write_allowed() -> bool:
+    # Darf die App Lieblingssongs ändern? (Scope der gespeicherten Spotify-Anmeldung)
+    try:
+        token = SpotifyServerAuth().oauth.get_cached_token() or {}
+    except Exception:
+        return False
+    return "user-library-modify" in (token.get("scope") or "").split()
+
+
 def images_or_empty(fetch, ids) -> Dict[str, str]:
     # Bilder sind optional: Fehler nicht cachen (memoize speichert nur Erfolge), Seite ohne Bilder rendern
     try:

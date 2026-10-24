@@ -118,6 +118,38 @@ def replace_playlist_items(sp: spotipy.Spotify, playlist_id: str, uris: list[str
     return (res or {}).get("snapshot_id")
 
 
+def insert_item(sp: spotipy.Spotify, playlist_id: str, uri: str, position: int) -> str:
+    """Fügt einen Eintrag an genau dieser Position ein (der bisherige rutscht eins nach hinten)."""
+    payload = {"uris": [uri], "position": position}
+    res = _call_with_fallback(
+        lambda: sp._post(f"playlists/{playlist_id}/items", payload=payload),
+        lambda: sp._post(f"playlists/{playlist_id}/tracks", payload=payload),
+    )
+    return (res or {}).get("snapshot_id")
+
+
+def remove_items(sp: spotipy.Spotify, playlist_id: str, uris: list[str]) -> str:
+    """Entfernt alle Vorkommen der URIs (lokale Dateien bleiben unberührt)."""
+    res = None
+    for i in range(0, len(uris), 100):
+        objs = [{"uri": u} for u in uris[i:i + 100]]
+
+        def new_route():
+            try:
+                return sp._delete(f"playlists/{playlist_id}/items", payload={"items": objs})
+            except spotipy.SpotifyException as e:
+                if e.http_status != 400:
+                    raise
+                # Falls die neue Route noch den alten Feldnamen erwartet
+                return sp._delete(f"playlists/{playlist_id}/items", payload={"tracks": objs})
+
+        res = _call_with_fallback(
+            new_route,
+            lambda: sp._delete(f"playlists/{playlist_id}/tracks", payload={"tracks": objs}),
+        )
+    return (res or {}).get("snapshot_id")
+
+
 def create_playlist(sp: spotipy.Spotify, name: str, public: bool = False, description: str = "") -> dict:
     payload = {"name": name, "public": public, "description": description}
     try:

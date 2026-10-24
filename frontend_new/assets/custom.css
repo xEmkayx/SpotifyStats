@@ -419,3 +419,13 @@ border-color: transparent !important;
 .modal-content { background-color: var(--surface); color: var(--text); border: 1px solid var(--border-strong); }
 .modal-header, .modal-footer { border-color: var(--border); }
 .modal-content .btn-close { filter: invert(1); }
+
+/* Meldungen schweben oben rechts und verschieben das Layout nicht */
+.toast-area {
+  position: fixed; top: 72px; right: 16px; z-index: 1090;
+  width: min(420px, calc(100vw - 32px)); pointer-events: none;
+}
+.toast-area .alert { pointer-events: auto; box-shadow: var(--shadow-2); margin-bottom: .5rem; }
+/* Auswahl-Listen in Dialogen */
+.select-list { max-height: 50vh; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: .5rem .75rem; }
+.select-list .form-check { padding-top: .2rem; padding-bottom: .2rem; }

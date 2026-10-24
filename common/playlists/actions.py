@@ -10,6 +10,7 @@
     Positionen bleiben erhalten; added_at setzt Spotify beim Neuschreiben neu.
 """
 import os
+import time
 from datetime import timezone
 from zoneinfo import ZoneInfo
 
@@ -124,24 +125,57 @@ def restore_snapshot(sp, snapshot_pk: int, expected_hash: str) -> str:
     return f"Fertig – die Playlist ist wieder auf dem Stand vom {taken:%d.%m.%Y, %H:%M} Uhr ({len(uris)} Songs)."
 
 
-def replace_superseded(sp, playlist_id: str, expected_hash: str) -> str:
+def _selected(todo: list[dict], positions) -> list[dict]:
+    # positions=None -> alle; sonst nur die ausgewählten Plätze
+    return todo if positions is None else [it for it in todo if it["position"] in set(positions)]
+
+
+def replace_superseded(sp, playlist_id: str, expected_hash: str, positions=None) -> str:
     if playlist_id == history.LIKED_ID:
-        return _replace_superseded_liked(sp, expected_hash)
+        return _replace_superseded_liked(sp, expected_hash, positions)
     meta, items, _ = _backup_current(sp, playlist_id, "before_replace")
     _check_unchanged(expected_hash, items, meta)
-    _check_writable(items)
     todo, _ = superseded_items(playlist_id)
+    todo = _selected(todo, positions)
     if not todo:
         return "In dieser Playlist ist schon alles aktuell."
-    new_uri = {it["position"]: it["new_uri"] for it in todo}
-    uris = [new_uri.get(it["position"], it["uri"]) for it in items]
-    api.replace_playlist_items(sp, playlist_id, uris)
+    if any(it["is_local"] for it in items):
+        replaced = _replace_in_place(sp, playlist_id, items, todo)
+    else:
+        new_uri = {it["position"]: it["new_uri"] for it in todo}
+        api.replace_playlist_items(sp, playlist_id, [new_uri.get(it["position"], it["uri"]) for it in items])
+        replaced = len(todo)
     history.sync_playlist(sp, {**meta, "id": playlist_id}, reason="replace", force_fetch=True)
-    return f"Fertig – {len(todo)} Songs sind jetzt in der aktuellen Version drin, an derselben Stelle wie vorher."
+    songs = "1 Song ist" if replaced == 1 else f"{replaced} Songs sind"
+    return f"Fertig – {songs} jetzt in der aktuellen Version drin, an derselben Stelle wie vorher."
 
 
-def _replace_superseded_liked(sp, expected_hash: str) -> str:
-    if "user-library-modify" not in api.token_scopes(sp.auth_manager):
+def _replace_in_place(sp, playlist_id: str, items: list[dict], todo: list[dict]) -> int:
+    """
+    Für Playlists mit lokalen Dateien: die neue Version direkt vor der alten einfügen und danach die
+    alten URIs entfernen. Lokale Dateien werden nie angefasst, die Reihenfolge bleibt exakt erhalten.
+    """
+    selected_uris = {it["uri"] for it in todo}
+    # Entfernen trifft alle Vorkommen einer URI -> nur URIs tauschen, deren Vorkommen alle ausgewählt sind
+    all_positions = {}
+    for it in items:
+        all_positions.setdefault(it["uri"], set()).add(it["position"])
+    todo = [it for it in todo if all_positions.get(it["uri"], set()) <= {t["position"] for t in todo
+                                                                          if t["uri"] == it["uri"]}]
+    # Von hinten nach vorne einfügen, damit sich die Positionen davor nicht verschieben
+    for it in sorted(todo, key=lambda t: t["position"], reverse=True):
+        api.insert_item(sp, playlist_id, it["new_uri"], it["position"])
+        time.sleep(0.1)  # ein Request pro Song -> Rate Limit schonen
+    api.remove_items(sp, playlist_id, sorted({it["uri"] for it in todo} & selected_uris))
+    return len(todo)
+
+
+def can_modify_library(sp) -> bool:
+    return "user-library-modify" in api.token_scopes(sp.auth_manager)
+
+
+def _replace_superseded_liked(sp, expected_hash: str, positions=None) -> str:
+    if not can_modify_library(sp):
         raise PlaylistActionError("Für deine Lieblingssongs fehlt noch eine Berechtigung bei Spotify "
                                   "(„user-library-modify“). Dafür musst du die Verbindung zu Spotify einmal neu "
                                   "herstellen.")
@@ -152,9 +186,11 @@ def _replace_superseded_liked(sp, expected_hash: str) -> str:
         raise PlaylistActionError("Deine Lieblingssongs haben sich in der Zwischenzeit geändert. Lade die Seite "
                                   "neu und schau dir die Vorschau noch einmal an.")
     todo, _ = superseded_items(history.LIKED_ID)
+    todo = _selected(todo, positions)
     if not todo:
         return "Bei deinen Lieblingssongs ist schon alles aktuell."
     api.save_to_library(sp, [it["new_uri"] for it in todo])
     api.remove_from_library(sp, [it["uri"] for it in todo])
     history.sync_liked(sp, reason="replace", force_fetch=True)
-    return f"Fertig – {len(todo)} Lieblingssongs sind jetzt in der aktuellen Version drin. Sie stehen jetzt ganz oben."
+    songs = "1 Lieblingssong ist" if len(todo) == 1 else f"{len(todo)} Lieblingssongs sind"
+    return f"Fertig – {songs} jetzt in der aktuellen Version drin und stehen ganz oben."

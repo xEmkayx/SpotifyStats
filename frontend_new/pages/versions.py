@@ -9,14 +9,14 @@ from frontend_new.core.data_version import bump_data_version
 from frontend_new.services.playlists import local_time, count
 from frontend_new.services.versions import (
     KIND_LABELS, version_groups, suggestions, catalog_changes, catalog_status,
-    merge_songs, split_song, remove_override, dismiss_suggestion
+    merge_songs, split_song, remove_override, dismiss_suggestion, merge_many, dismiss_many
 )
 
 dash.register_page(__name__, path="/versions", name="Versionen", group="Bibliothek", order=31)
 
 GROUP_PAGE_SIZE = 20
 CHANGES_PAGE_SIZE = 50
-SUGGESTION_LIMIT = 50
+SUGGESTION_PAGE_SIZE = 25
 
 KIND_COLORS = {"replaced": "warning", "same_recording": "info", "manual": "secondary"}
 KIND_FILTER_LABELS = {"replaced": "Veraltete Versionen", "same_recording": "Weitere Releases",
@@ -95,11 +95,13 @@ def _suggestion_card(s: dict):
             _spotify_link(x["song_id"]),
         ])
 
-    # Die meistgehörte Version wird zum Ziel; die kanonische Version berechnet die Gruppe ohnehin neu
+    # Die meistgehörte Version wird zum Ziel; die Hauptversion berechnet die Gruppe ohnehin neu
     source, target = (a["song_id"], b["song_id"]) if s["plays_a"] <= s["plays_b"] else (b["song_id"], a["song_id"])
     return dbc.Card(dbc.CardBody(dbc.Row([
+        dbc.Col(dbc.Checkbox(id={"type": "ver-sugg-check", "song": source, "target": target}, value=False),
+                width="auto", className="pt-1"),
         dbc.Col(side(a, s["plays_a"]), md=5),
-        dbc.Col(side(b, s["plays_b"]), md=5),
+        dbc.Col(side(b, s["plays_b"]), md=4),
         dbc.Col([
             dbc.Button("Zusammen zählen", id={"type": "ver-merge", "song": source, "target": target}, size="sm",
                        color="primary", className="w-100 mb-1"),
@@ -122,7 +124,7 @@ def _groups_tab():
                 {"label": "Titel A–Z", "value": "name"}]), md=4),
         ], className="g-2 mb-3"),
         dcc.Store(id="ver-page", data=0),
-        dcc.Loading(html.Div(id="ver-groups")),
+        dcc.Loading(html.Div(id="ver-groups"), delay_show=600),
         html.Div([
             dbc.Button("‹ Zurück", id="ver-prev", size="sm", color="secondary", outline=True, className="me-2"),
             html.Span(id="ver-page-label", className="text-muted small me-2"),
@@ -137,7 +139,21 @@ def _suggestions_tab():
                "als unterschiedliche Aufnahmen, zum Beispiel bei einem Remaster. Ob sie zusammengehören, "
                "entscheidest du.", className="text-muted small"),
         dbc.Input(id="ver-sugg-search", placeholder="Song oder Artist suchen", debounce=True, className="mb-3"),
-        dcc.Loading(html.Div(id="ver-suggestions")),
+        html.Div([
+            dbc.Checkbox(id="ver-sugg-all", label="Alle auf dieser Seite auswählen", value=False,
+                         className="me-3"),
+            dbc.Button("Ausgewählte zusammen zählen", id="ver-sugg-merge-selected", size="sm", color="primary",
+                       className="me-2"),
+            dbc.Button("Ausgewählte gehören nicht zusammen", id="ver-sugg-dismiss-selected", size="sm",
+                       color="secondary", outline=True),
+        ], className="d-flex align-items-center flex-wrap gap-2 mb-3"),
+        dcc.Store(id="ver-sugg-page", data=0),
+        dcc.Loading(html.Div(id="ver-suggestions"), delay_show=600),
+        html.Div([
+            dbc.Button("‹ Zurück", id="ver-sugg-prev", size="sm", color="secondary", outline=True, className="me-2"),
+            html.Span(id="ver-sugg-page-label", className="text-muted small me-2"),
+            dbc.Button("Weiter ›", id="ver-sugg-next", size="sm", color="secondary", outline=True),
+        ], className="d-flex align-items-center justify-content-center mt-2"),
     ], className="pt-3")
 
 
@@ -189,7 +205,7 @@ def layout():
     status, overrides = _status_children()
     return dbc.Container([
         dcc.Store(id="ver-refresh", data=0),
-        html.Div(id="ver-feedback"),
+        html.Div(id="ver-feedback", className="toast-area"),
         dbc.Card(dbc.CardBody(html.Div(id="ver-status", children=status)), className="mb-3"),
         dbc.Tabs([
             dbc.Tab(_groups_tab(), label="Songs", tab_id="groups"),
@@ -298,19 +314,49 @@ def update_groups(page, _refresh, search, kind, sort, cache_ver):
 
 
 @callback(
-    Output("ver-suggestions", "children"),
+    Output("ver-sugg-page", "data"),
+    Input("ver-sugg-prev", "n_clicks"),
+    Input("ver-sugg-next", "n_clicks"),
     Input("ver-sugg-search", "value"),
+    State("ver-sugg-page", "data"),
+    prevent_initial_call=True
+)
+def change_suggestion_page(_prev, _next, _search, page):
+    if ctx.triggered_id == "ver-sugg-prev":
+        return max(0, (page or 0) - 1)
+    if ctx.triggered_id == "ver-sugg-next":
+        return (page or 0) + 1
+    return 0
+
+
+@callback(
+    Output("ver-suggestions", "children"),
+    Output("ver-sugg-page-label", "children"),
+    Output("ver-sugg-all", "value"),
+    Input("ver-sugg-page", "data"),
     Input("ver-refresh", "data"),
+    State("ver-sugg-search", "value"),
     State("cache-version", "data"),
 )
-def update_suggestions(search, _refresh, cache_ver):
+def update_suggestions(page, _refresh, search, cache_ver):
     items = suggestions((search or "").strip(), int(cache_ver or 0))
+    pages = max(1, math.ceil(len(items) / SUGGESTION_PAGE_SIZE))
+    page = min(int(page or 0), pages - 1)
+    label = f"Seite {page + 1} von {pages} · {count(len(items), 'Vorschlag', 'Vorschläge')}"
     if not items:
-        return empty_state("Keine Vorschläge", "Gerade gibt es nichts zu prüfen.", icon="bi bi-check2-all")
-    head = html.Small(f"{len(items)} Vorschläge" + (f", hier siehst du die ersten {SUGGESTION_LIMIT}"
-                                                    if len(items) > SUGGESTION_LIMIT else ""),
-                      className="text-muted d-block mb-2")
-    return [head] + [_suggestion_card(s) for s in items[:SUGGESTION_LIMIT]]
+        return empty_state("Keine Vorschläge", "Gerade gibt es nichts zu prüfen.", icon="bi bi-check2-all"), label, False
+    shown = items[page * SUGGESTION_PAGE_SIZE:(page + 1) * SUGGESTION_PAGE_SIZE]
+    return [_suggestion_card(s) for s in shown], label, False
+
+
+@callback(
+    Output({"type": "ver-sugg-check", "song": ALL, "target": ALL}, "value"),
+    Input("ver-sugg-all", "value"),
+    State({"type": "ver-sugg-check", "song": ALL, "target": ALL}, "value"),
+    prevent_initial_call=True
+)
+def select_all_suggestions(select_all, current):
+    return [bool(select_all)] * len(current)
 
 
 @callback(
@@ -348,16 +394,33 @@ def update_changes(page, search, entity, _refresh, cache_ver):
     Input({"type": "ver-dismiss", "song": ALL, "target": ALL}, "n_clicks"),
     Input({"type": "ver-unoverride", "song": ALL}, "n_clicks"),
     Input("ver-merge-manual", "n_clicks"),
+    Input("ver-sugg-merge-selected", "n_clicks"),
+    Input("ver-sugg-dismiss-selected", "n_clicks"),
     State("ver-merge-source", "value"),
     State("ver-merge-target", "value"),
+    State({"type": "ver-sugg-check", "song": ALL, "target": ALL}, "value"),
+    State({"type": "ver-sugg-check", "song": ALL, "target": ALL}, "id"),
     State("ver-refresh", "data"),
     prevent_initial_call=True
 )
-def handle_action(_split, _merge, _dismiss, _unoverride, _manual, source, target, refresh):
+def handle_action(_split, _merge, _dismiss, _unoverride, _manual, _merge_sel, _dismiss_sel, source, target,
+                  checked, check_ids, refresh):
     # Neu gerenderte Buttons lösen den Callback mit n_clicks=None aus -> ignorieren
     if not ctx.triggered or not ctx.triggered[0]["value"]:
         return no_update, no_update, no_update
     trg = ctx.triggered_id
+    if trg in ("ver-sugg-merge-selected", "ver-sugg-dismiss-selected"):
+        pairs = [(cid["song"], cid["target"]) for cid, on in zip(check_ids or [], checked or []) if on]
+        if not pairs:
+            return dbc.Alert("Wähl zuerst mindestens einen Vorschlag aus.", color="info", duration=3000), \
+                no_update, no_update
+        if trg == "ver-sugg-merge-selected":
+            n = merge_many(pairs)
+            text = f"Erledigt – {count(n, 'Paar wird', 'Paare werden')} jetzt zusammen gezählt."
+        else:
+            n = dismiss_many(pairs)
+            text = f"Alles klar, {count(n, 'Vorschlag taucht', 'Vorschläge tauchen')} nicht mehr auf."
+        return dbc.Alert(text, color="success", duration=4000), (refresh or 0) + 1, bump_data_version()
     if trg == "ver-merge-manual":
         msg = merge_songs(source, target)
         text = "Erledigt – die beiden Songs werden jetzt zusammen gezählt." if msg == "ok" else msg
