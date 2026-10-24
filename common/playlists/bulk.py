@@ -36,6 +36,22 @@ def superseded_overview() -> list[dict]:
     return [dict(r) for r in rows]
 
 
+def superseded_totals() -> dict:
+    """Einträge gesamt (ein Song in 5 Playlists zählt 5-mal) und verschiedene Songs."""
+    with engine.connect() as conn:
+        row = conn.execute(text("""
+            SELECT COUNT(*) AS entries, COUNT(DISTINCT i.track_id) AS songs, COUNT(DISTINCT p.playlist_id) AS playlists
+            FROM playlists p
+            JOIN (SELECT playlist_id, MAX(id) AS id FROM playlist_snapshots GROUP BY playlist_id) ps
+                 ON ps.playlist_id = p.playlist_id
+            JOIN playlist_snapshot_items i ON i.snapshot_id = ps.id
+            LEFT JOIN songs s ON s.song_id = i.track_id
+            WHERE p.deleted_at IS NULL AND i.is_local = 0
+              AND (i.playable_id IS NOT NULL OR s.relinked_to IS NOT NULL)
+        """)).mappings().first()
+    return {k: int(v or 0) for k, v in dict(row).items()}
+
+
 def _set_status(value: str):
     with engine.begin() as conn:
         conn.execute(text("""

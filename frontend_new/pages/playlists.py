@@ -382,8 +382,8 @@ def _bulk_status_line():
     Input("pl-bulk-refresh", "data"),
 )
 def update_bulk_info(_n, _refresh):
-    overview = bulk.superseded_overview()
-    total = sum(p["superseded"] for p in overview)
+    totals = bulk.superseded_totals()
+    total = totals["entries"]
     auto = settings.get_flag(settings.AUTO_REPLACE_PLAYLISTS)
     auto_text = ("Neue veraltete Versionen werden automatisch ausgetauscht. " if auto else
                  "Automatisch austauschen kannst du in den ")
@@ -392,8 +392,11 @@ def update_bulk_info(_n, _refresh):
         return None, True
     info = dbc.Card(dbc.CardBody(html.Div([
         html.Div([
-            html.Div(f"{count(total, 'Song', 'Songs')} in {count(len(overview), 'Playlist', 'Playlists')} "
-                     f"{'hat' if total == 1 else 'haben'} eine neuere Version.", className="fw-semibold"),
+            html.Div(f"{count(totals['songs'], 'Song hat', 'Songs haben')} eine neuere Version.",
+                     className="fw-semibold"),
+            html.Small(f"Zusammen {'kommt er' if totals['songs'] == 1 else 'kommen sie'} "
+                       f"{count(total, 'Mal', 'Mal')} in {count(totals['playlists'], 'Playlist', 'Playlists')} vor.",
+                       className="text-muted d-block"),
             html.Small([auto_text, html.A("Einstellungen", href="/settings") if not auto else
                         html.A("Einstellung ändern", href="/settings"), "" if auto else " einschalten."],
                        className="text-muted d-block"),
