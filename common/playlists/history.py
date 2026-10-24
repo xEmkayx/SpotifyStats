@@ -82,7 +82,7 @@ def store_snapshot(conn, playlist_id: str, items: list[dict], name: str, descrip
         INSERT INTO playlist_snapshots (playlist_id, spotify_snapshot_id, name, description, track_count,
                                         content_hash, reason, taken_at)
         VALUES (:p, :sid, :name, :desc, :count, :hash, :reason, :now)
-    """), {"p": playlist_id, "sid": spotify_snapshot_id, "name": name, "desc": (description or "")[:1000],
+    """), {"p": playlist_id, "sid": spotify_snapshot_id, "name": name, "desc": description or "",
            "count": len(items), "hash": digest, "reason": reason, "now": now}).lastrowid
     if items:
         conn.execute(text("""
@@ -91,8 +91,7 @@ def store_snapshot(conn, playlist_id: str, items: list[dict], name: str, descrip
             VALUES (:s, :position, :uri, :track_id, :playable_id, :name, :artists, :album, :duration_ms,
                     :added_at, :added_by, :is_local)
         """), [{**it, "s": snap_pk, "added_at": parse_spotify_time(it.get("added_at")),
-                "name": (it.get("name") or "")[:500], "artists": (it.get("artists") or "")[:1000],
-                "album": (it.get("album") or "")[:500], "is_local": int(bool(it.get("is_local")))}
+                "is_local": int(bool(it.get("is_local")))}
                for it in items])
     conn.execute(text("UPDATE playlists SET last_changed_at = :now WHERE playlist_id = :p"),
                  {"now": now, "p": playlist_id})
@@ -118,7 +117,7 @@ def _playlist_meta(p: dict) -> dict:
     images = p.get("images") or []
     return {
         "name": p.get("name"),
-        "description": (p.get("description") or "")[:1000],
+        "description": p.get("description") or "",
         "owner_id": (p.get("owner") or {}).get("id"),
         "is_public": None if p.get("public") is None else int(bool(p.get("public"))),
         "collaborative": int(bool(p.get("collaborative"))),

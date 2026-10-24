@@ -9,16 +9,6 @@
 """
 from sqlalchemy import text, bindparam
 
-MAX_VALUE_LEN = 500
-
-
-def _clip(value):
-    if value is None:
-        return None
-    value = str(value)
-    return value[:MAX_VALUE_LEN]
-
-
 def _load(conn, sql: str, ids) -> dict:
     if not ids:
         return {}
@@ -31,7 +21,8 @@ def log_changes(conn, changes: list[dict]):
         conn.execute(text("""
             INSERT INTO catalog_changes (entity, entity_id, field, old_value, new_value, source)
             VALUES (:entity, :entity_id, :field, :old_value, :new_value, :source)
-        """), [{**c, "old_value": _clip(c["old_value"]), "new_value": _clip(c["new_value"])} for c in changes])
+        """), [{**c, "old_value": None if c["old_value"] is None else str(c["old_value"]),
+                "new_value": None if c["new_value"] is None else str(c["new_value"])} for c in changes])
 
 
 def apply_tracks(conn, tracks: list, source: str) -> dict:
