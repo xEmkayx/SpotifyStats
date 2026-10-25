@@ -10,13 +10,13 @@ def _chunks(seq, size):
         yield seq[i:i+size]
 
 
-def spotify_client():
+def spotify_client(wait_on_rate_limit: bool = True):
     auth = SpotifyServerAuth()
     # Ohne gespeichertes Token würde spotipy per input() nach der Redirect-URL fragen
     # und den Request-Thread dauerhaft blockieren -> lieber sauber abbrechen.
     if not auth.oauth.get_cached_token():
         raise RuntimeError("Die Verbindung zu Spotify fehlt noch. Bitte melde dich einmal über das Backend an.")
-    return auth.get_authenticated_spotify_client()
+    return auth.get_authenticated_spotify_client(wait_on_rate_limit=wait_on_rate_limit)
 
 
 def library_write_allowed() -> bool:

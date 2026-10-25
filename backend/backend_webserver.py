@@ -45,7 +45,7 @@ def _scheduled_playlist_sync():
         sp = auth.get_authenticated_spotify_client()
         history.sync_all(sp)
         # Veraltete Versionen austauschen, falls in den Einstellungen aktiviert
-        bulk.run_auto_replace(sp)
+        bulk.run_auto_replace(auth.get_authenticated_spotify_client(wait_on_rate_limit=False))
     except Exception:
         logging.exception('Scheduled playlist sync failed.')
 

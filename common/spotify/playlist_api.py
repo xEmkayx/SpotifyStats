@@ -9,6 +9,7 @@
     alten ausgewichen (Apps im Extended Quota Mode nutzen weiter die alten).
 """
 import logging
+import time
 
 import spotipy
 
@@ -28,6 +29,26 @@ def _call_with_fallback(new, old):
             logging.warning(f"Neue Playlist-Route nicht verfügbar ({e.http_status}), nutze /tracks.")
             _use_items_route = False
     return old()
+
+
+def _write(call, max_attempts: int = 6):
+    """
+    Schreibende Anfrage, die bei Rate Limit (429) immer zu Ende geführt wird: wartet die von Spotify
+    genannte Zeit und versucht es erneut. Würde stattdessen abgebrochen, bliebe eine Playlist halb
+    geschrieben zurück (z. B. nur die ersten 100 Songs nach dem Ersetzen).
+    """
+    for attempt in range(1, max_attempts + 1):
+        try:
+            return call()
+        except spotipy.SpotifyException as e:
+            if e.http_status != 429 or attempt == max_attempts:
+                raise
+            try:
+                wait = int((e.headers or {}).get("Retry-After", 30))
+            except (TypeError, ValueError):
+                wait = 30
+            logging.warning(f"Spotify bremst beim Schreiben, warte {wait} s und versuche es erneut")
+            time.sleep(min(wait, 1800) + 1)
 
 
 def current_user_id(sp: spotipy.Spotify) -> str:
@@ -88,43 +109,49 @@ def normalize_entry(entry: dict, position: int) -> dict:
     }
 
 
-def get_saved_tracks(sp: spotipy.Spotify, market: str = MARKET_DEFAULT, limit_pages: int = None) -> tuple[int, list]:
-    # GET /me/tracks (weiterhin verfügbar), neueste zuerst
+def iter_saved_track_pages(sp: spotipy.Spotify, market: str = MARKET_DEFAULT):
+    """GET /me/tracks seitenweise (neueste zuerst): liefert (total, [normalisierte Einträge]) je Seite."""
     page = sp.current_user_saved_tracks(limit=50, market=market)
-    total = page.get("total") or 0
-    entries, pages = [], 0
+    offset = 0
     while page:
-        entries += page.get("items") or []
-        pages += 1
-        if limit_pages and pages >= limit_pages:
-            break
+        entries = page.get("items") or []
+        yield page.get("total") or 0, [normalize_entry(e, offset + pos) for pos, e in enumerate(entries)]
+        offset += len(entries)
         page = sp.next(page) if page.get("next") else None
-    return total, [normalize_entry(e, pos) for pos, e in enumerate(entries)]
+
+
+def get_saved_tracks(sp: spotipy.Spotify, market: str = MARKET_DEFAULT, limit_pages: int = None) -> tuple[int, list]:
+    total, items = 0, []
+    for n, (total, page_items) in enumerate(iter_saved_track_pages(sp, market), start=1):
+        items += page_items
+        if limit_pages and n >= limit_pages:
+            break
+    return total, items
 
 
 def replace_playlist_items(sp: spotipy.Spotify, playlist_id: str, uris: list[str]) -> str:
     """Überschreibt die Playlist mit genau dieser Reihenfolge. Gibt die neue snapshot_id zurück."""
     first, rest = uris[:100], uris[100:]
-    res = _call_with_fallback(
+    res = _write(lambda: _call_with_fallback(
         lambda: sp._put(f"playlists/{playlist_id}/items", payload={"uris": first}),
         lambda: sp._put(f"playlists/{playlist_id}/tracks", payload={"uris": first}),
-    )
+    ))
     for i in range(0, len(rest), 100):
         chunk = rest[i:i + 100]
-        res = _call_with_fallback(
+        res = _write(lambda: _call_with_fallback(
             lambda: sp._post(f"playlists/{playlist_id}/items", payload={"uris": chunk}),
             lambda: sp._post(f"playlists/{playlist_id}/tracks", payload={"uris": chunk}),
-        )
+        ))
     return (res or {}).get("snapshot_id")
 
 
 def insert_item(sp: spotipy.Spotify, playlist_id: str, uri: str, position: int) -> str:
     """Fügt einen Eintrag an genau dieser Position ein (der bisherige rutscht eins nach hinten)."""
     payload = {"uris": [uri], "position": position}
-    res = _call_with_fallback(
+    res = _write(lambda: _call_with_fallback(
         lambda: sp._post(f"playlists/{playlist_id}/items", payload=payload),
         lambda: sp._post(f"playlists/{playlist_id}/tracks", payload=payload),
-    )
+    ))
     return (res or {}).get("snapshot_id")
 
 
@@ -143,10 +170,10 @@ def remove_items(sp: spotipy.Spotify, playlist_id: str, uris: list[str]) -> str:
                 # Falls die neue Route noch den alten Feldnamen erwartet
                 return sp._delete(f"playlists/{playlist_id}/items", payload={"tracks": objs})
 
-        res = _call_with_fallback(
+        res = _write(lambda: _call_with_fallback(
             new_route,
             lambda: sp._delete(f"playlists/{playlist_id}/tracks", payload={"tracks": objs}),
-        )
+        ))
     return (res or {}).get("snapshot_id")
 
 
@@ -168,20 +195,24 @@ def token_scopes(auth_manager) -> set:
 def save_to_library(sp: spotipy.Spotify, uris: list[str]):
     for i in range(0, len(uris), 40):
         chunk = uris[i:i + 40]
-        try:
-            sp._put("me/library", args=None, payload=None, uris=",".join(chunk))
-        except spotipy.SpotifyException as e:
-            if e.http_status not in _FALLBACK_STATUS:
-                raise
-            sp.current_user_saved_tracks_add([u.split(":")[-1] for u in chunk])
+        def save(chunk=chunk):
+            try:
+                sp._put("me/library", args=None, payload=None, uris=",".join(chunk))
+            except spotipy.SpotifyException as e:
+                if e.http_status not in _FALLBACK_STATUS:
+                    raise
+                sp.current_user_saved_tracks_add([u.split(":")[-1] for u in chunk])
+        _write(save)
 
 
 def remove_from_library(sp: spotipy.Spotify, uris: list[str]):
     for i in range(0, len(uris), 40):
         chunk = uris[i:i + 40]
-        try:
-            sp._delete("me/library", args=None, payload=None, uris=",".join(chunk))
-        except spotipy.SpotifyException as e:
-            if e.http_status not in _FALLBACK_STATUS:
-                raise
-            sp.current_user_saved_tracks_delete([u.split(":")[-1] for u in chunk])
+        def remove(chunk=chunk):
+            try:
+                sp._delete("me/library", args=None, payload=None, uris=",".join(chunk))
+            except spotipy.SpotifyException as e:
+                if e.http_status not in _FALLBACK_STATUS:
+                    raise
+                sp.current_user_saved_tracks_delete([u.split(":")[-1] for u in chunk])
+        _write(remove)

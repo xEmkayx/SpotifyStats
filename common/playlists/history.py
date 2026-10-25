@@ -30,6 +30,8 @@ def parse_spotify_time(value):
     # "2024-05-01T12:34:56Z" -> naive UTC
     if not value:
         return None
+    if isinstance(value, datetime):
+        return value  # stammt schon aus der DB (naive UTC)
     try:
         return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(timezone.utc).replace(tzinfo=None)
     except ValueError:
@@ -136,12 +138,15 @@ def sync_playlist(sp, playlist: dict, reason: str = "sync", force_fetch: bool = 
                               {"p": pid}).scalar()
         has_snapshot = latest_snapshot(conn, pid) is not None
     changed = force_fetch or not has_snapshot or stored != meta["snapshot_id"]
-    with engine.begin() as conn:
-        _upsert_playlist(conn, pid, meta)
     if not changed:
+        with engine.begin() as conn:
+            _upsert_playlist(conn, pid, meta)
         return False
+    # Erst laden, dann die neue Spotify-Version speichern: scheitert das Laden, bleibt die alte Version
+    # stehen und der nächste Abgleich versucht es erneut
     items = api.get_playlist_items(sp, pid)
     with engine.begin() as conn:
+        _upsert_playlist(conn, pid, meta)
         snap = store_snapshot(conn, pid, items, meta["name"], meta["description"], meta["snapshot_id"],
                               "initial" if not has_snapshot else reason)
     return snap is not None
@@ -154,20 +159,82 @@ def sync_playlist_by_id(sp, playlist_id: str, reason: str = "manual") -> bool:
     return sync_playlist(sp, meta, reason=reason, force_fetch=True)
 
 
+def liked_head_matches(sp) -> bool:
+    """Günstiger Check (1 Anfrage): entspricht der gespeicherte Stand der Lieblingssongs noch Spotify?"""
+    total, first_page = api.get_saved_tracks(sp, limit_pages=1)
+    with engine.connect() as conn:
+        latest = latest_snapshot(conn, LIKED_ID)
+        head = [it["uri"] for it in snapshot_items(conn, latest["id"])[:len(first_page)]] if latest else []
+    return bool(latest) and latest["track_count"] == total and head == [it["uri"] for it in first_page]
+
+
+def store_known_state(playlist_id: str, items: list[dict], name: str, description: str,
+                      spotify_snapshot_id, reason: str):
+    """Nach einem eigenen Schreibvorgang den bekannten neuen Stand speichern, ohne ihn erneut zu laden."""
+    for pos, it in enumerate(items):
+        it["position"] = pos
+    with engine.begin() as conn:
+        store_snapshot(conn, playlist_id, items, name, description, spotify_snapshot_id, reason, force=True)
+        conn.execute(text("""
+            UPDATE playlists SET spotify_snapshot_id = COALESCE(:sid, spotify_snapshot_id), track_count = :n,
+                                 last_synced_at = :now
+            WHERE playlist_id = :p
+        """), {"sid": spotify_snapshot_id, "n": len(items), "now": utcnow(), "p": playlist_id})
+
+
+def _liked_from_head(sp, stored: list[dict], known_new: set = None, removed: set = None):
+    """
+    Lieblingssongs sind nach Speicherdatum sortiert, Neues steht oben. Deshalb reicht es meist, nur die
+    obersten Seiten zu laden, bis der bisher gespeicherte Stand wieder anschließt:
+      neuer Stand = neue Songs oben + gespeicherter Stand (ohne entfernte Songs)
+    Passt die Gesamtzahl danach nicht (z. B. weiter unten etwas entfernt), wird None zurückgegeben
+    und der Aufrufer lädt alles.
+    """
+    removed = removed or set()
+    rest = [dict(it) for it in stored if it["uri"] not in removed]
+    if not rest:
+        return None
+    anchor = rest[0]["uri"]
+    rest_uris = [it["uri"] for it in rest]
+    head = []
+    for total, page in api.iter_saved_track_pages(sp):
+        head += page
+        uris = [it["uri"] for it in head]
+        if anchor not in uris:
+            if len(head) > len(known_new or ()) + 500:
+                return None  # zu viel Neues -> lieber komplett laden
+            continue
+        # Ab dem ersten bekannten Song muss die Liste dem gespeicherten Rest entsprechen
+        k = uris.index(anchor)
+        tail = uris[k:]
+        if tail != rest_uris[:len(tail)] or (known_new and not known_new <= set(uris[:k])) \
+                or k + len(rest) != total:
+            return None
+        result = head[:k] + rest
+        for pos, it in enumerate(result):
+            it["position"] = pos
+        return result
+    return None
+
+
 def sync_liked(sp, reason: str = "sync", force_fetch: bool = False) -> bool:
     # Für Lieblingssongs gibt es keine snapshot_id: Gesamtzahl + erste Seite als Änderungssignal
     total, first_page = api.get_saved_tracks(sp, limit_pages=1)
     with engine.connect() as conn:
         latest = latest_snapshot(conn, LIKED_ID)
-        latest_head = [it["uri"] for it in snapshot_items(conn, latest["id"])[:len(first_page)]] if latest else []
-    unchanged = latest and latest["track_count"] == total and latest_head == [it["uri"] for it in first_page]
+        stored = snapshot_items(conn, latest["id"]) if latest else []
+    unchanged = latest and latest["track_count"] == total and \
+        [it["uri"] for it in stored[:len(first_page)]] == [it["uri"] for it in first_page]
     meta = {"name": LIKED_NAME, "description": "", "owner_id": None, "is_public": 0, "collaborative": 0,
             "image_url": None, "snapshot_id": None, "track_count": total}
     with engine.begin() as conn:
         _upsert_playlist(conn, LIKED_ID, meta)
     if unchanged and not force_fetch:
         return False
-    _, items = api.get_saved_tracks(sp)
+    # Häufigster Fall: nur oben neue Songs dazugekommen -> wenige Seiten statt aller (~190 bei 9.500 Songs)
+    items = _liked_from_head(sp, stored) if latest and not force_fetch else None
+    if items is None:
+        _, items = api.get_saved_tracks(sp)
     with engine.begin() as conn:
         snap = store_snapshot(conn, LIKED_ID, items, LIKED_NAME, "", None, "initial" if not latest else reason)
     return snap is not None

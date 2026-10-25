@@ -3,6 +3,7 @@ from urllib.parse import parse_qs
 import dash
 import dash_bootstrap_components as dbc
 from dash import dcc, html, Input, Output, State, callback, ctx, ALL, no_update, dash_table
+from spotipy import SpotifyException
 
 from common import settings
 from common.playlists import actions, bulk, history
@@ -326,7 +327,7 @@ def run_action(_confirm, _sync, pending, playlist_id, selected):
         return no_update, no_update, no_update
     reload_hint = html.A(" Seite neu laden", href=f"/playlists?id={playlist_id}", className="alert-link")
     try:
-        sp = spotify_client()
+        sp = spotify_client(wait_on_rate_limit=False)
         if ctx.triggered_id == "pl-sync":
             changed = history.sync_playlist_by_id(sp, playlist_id)
             msg = "Neuer Stand gespeichert." if changed else "Seit der letzten Prüfung hat sich nichts geändert."
@@ -342,6 +343,12 @@ def run_action(_confirm, _sync, pending, playlist_id, selected):
     except (actions.PlaylistActionError, RuntimeError) as e:
         # Verständliche Meldungen (z. B. fehlende Spotify-Verbindung) ohne Zusatz anzeigen
         return dbc.Alert(str(e), color="warning", dismissable=True), False, no_update
+    except SpotifyException as e:
+        if e.http_status == 429:
+            minutes = max(1, round(bulk._retry_after(e) / 60))
+            return dbc.Alert(f"Spotify bremst gerade. Versuch es in etwa {minutes} Minuten noch einmal.",
+                             color="warning", dismissable=True), False, no_update
+        return dbc.Alert(f"Spotify meldet einen Fehler: {e.msg}", color="danger", dismissable=True), False, no_update
     except Exception as e:
         return dbc.Alert(f"Da ist etwas schiefgegangen: {e}", color="danger", dismissable=True), False, no_update
     return dbc.Alert([msg, reload_hint], color="success", dismissable=True), False, bump_data_version()
@@ -452,7 +459,7 @@ def bulk_confirm(_n, selected, refresh):
     if not selected:
         return dbc.Alert("Du hast keine Playlist ausgewählt.", color="info", duration=3000), no_update, no_update
     try:
-        started = bulk.replace_many_in_background(spotify_client(), list(selected))
+        started = bulk.replace_many_in_background(spotify_client(wait_on_rate_limit=False), list(selected))
     except RuntimeError as e:
         return dbc.Alert(str(e), color="warning", dismissable=True), False, no_update
     except Exception as e:

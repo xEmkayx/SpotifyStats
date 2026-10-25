@@ -6,13 +6,16 @@ import logging
 import threading
 import time
 
-from sqlalchemy import text
+import spotipy
+from sqlalchemy import text, bindparam
 
 from common import settings
 from common.db.engine import engine
 from common.playlists import actions, history
 
 STATUS_KEY = "playlist_replace_status"
+# Kurze Rate-Limit-Pausen abwarten, bei längeren den Lauf beenden (Rest beim nächsten Abgleich)
+MAX_WAIT_SEC = 60
 # MySQL-Sperre statt threading.Lock: Backend (Automatik) und Frontend (Knopf) sind getrennte Prozesse.
 # Bricht ein Prozess ab, gibt MySQL die Sperre mit der Verbindung automatisch frei.
 _LOCK_NAME = "spotify_stats_playlist_replace"
@@ -78,32 +81,55 @@ def replace_many(sp, playlist_ids: list[str]) -> dict:
     if not lock_conn.execute(text("SELECT GET_LOCK(:n, 0)"), {"n": _LOCK_NAME}).scalar():
         lock_conn.close()
         return {"skipped": True}
-    result = {"done": 0, "songs": 0, "skipped": [], "failed": []}
+    result = {"done": 0, "songs": 0, "skipped": [], "failed": [], "paused": None}
     try:
+        # Lieblingssongs zuletzt: dort braucht es eine eigene Berechtigung
+        playlist_ids = sorted(playlist_ids, key=lambda p: p == history.LIKED_ID)
+        names = _names(playlist_ids)
         total = len(playlist_ids)
         for n, pid in enumerate(playlist_ids, start=1):
-            _set_status(f"läuft: {n} von {total} Playlists")
+            _set_status(f"läuft: {n} von {total} Playlists ({names.get(pid, pid)})")
             todo, digest = actions.superseded_items(pid)
             if not todo:
                 continue
             if pid == history.LIKED_ID and not actions.can_modify_library(sp):
                 result["skipped"].append(pid)
                 continue
-            try:
-                before = len(todo)
-                actions.replace_superseded(sp, pid, digest)
-                after = len(actions.superseded_items(pid)[0])
-                result["done"] += 1
-                result["songs"] += before - after
-            except actions.PlaylistActionError as e:
-                # z. B. lokale Dateien oder zwischenzeitlich geändert -> beim nächsten Lauf erneut
-                result["skipped"].append(pid)
-                logging.info(f"Austausch in {pid} übersprungen: {e}")
-            except Exception:
-                result["failed"].append(pid)
-                logging.exception(f"Austausch in {pid} fehlgeschlagen")
-            time.sleep(0.2)
+            for attempt in (1, 2):
+                try:
+                    before = len(todo)
+                    actions.replace_superseded(sp, pid, digest)
+                    after = len(actions.superseded_items(pid)[0])
+                    result["done"] += 1
+                    result["songs"] += before - after
+                except spotipy.SpotifyException as e:
+                    if e.http_status != 429:
+                        result["failed"].append(pid)
+                        logging.exception(f"Austausch in {pid} fehlgeschlagen")
+                        break
+                    wait = _retry_after(e)
+                    if attempt == 1 and wait <= MAX_WAIT_SEC:
+                        logging.info(f"Spotify bremst, warte {wait} s")
+                        time.sleep(wait + 1)
+                        todo, digest = actions.superseded_items(pid)
+                        continue
+                    result["paused"] = wait
+                except actions.PlaylistActionError as e:
+                    # z. B. zwischenzeitlich geändert -> beim nächsten Lauf erneut
+                    result["skipped"].append(pid)
+                    logging.info(f"Austausch in {pid} übersprungen: {e}")
+                except Exception:
+                    result["failed"].append(pid)
+                    logging.exception(f"Austausch in {pid} fehlgeschlagen")
+                break
+            if result["paused"] is not None:
+                break
+            time.sleep(0.3)
         summary = f"fertig: {result['songs']} Songs in {result['done']} Playlists ausgetauscht"
+        if result["paused"] is not None:
+            minutes = max(1, round(result["paused"] / 60))
+            summary = (f"pausiert: Spotify bremst gerade (etwa {minutes} Min.). {result['songs']} Songs in "
+                       f"{result['done']} Playlists sind schon ausgetauscht, der Rest folgt später")
         if result["skipped"] or result["failed"]:
             summary += f", {len(result['skipped']) + len(result['failed'])} Playlists übersprungen"
         _set_status(summary)
@@ -114,6 +140,21 @@ def replace_many(sp, playlist_ids: list[str]) -> dict:
     finally:
         lock_conn.execute(text("SELECT RELEASE_LOCK(:n)"), {"n": _LOCK_NAME})
         lock_conn.close()
+
+
+def _names(playlist_ids: list[str]) -> dict:
+    if not playlist_ids:
+        return {}
+    with engine.connect() as conn:
+        return dict(conn.execute(text("SELECT playlist_id, name FROM playlists WHERE playlist_id IN :ids")
+                                 .bindparams(bindparam("ids", expanding=True)), {"ids": list(playlist_ids)}).all())
+
+
+def _retry_after(e: spotipy.SpotifyException) -> int:
+    try:
+        return int((e.headers or {}).get("Retry-After", 60))
+    except (TypeError, ValueError):
+        return 60
 
 
 def replace_many_in_background(sp, playlist_ids: list[str]) -> bool:
